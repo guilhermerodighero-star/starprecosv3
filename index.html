@@ -1,0 +1,1837 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Consulta de Preços - Starmobile</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      background: #f5f5f5;
+    }
+    header {
+      padding: 12px 16px;
+      background: #111;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    header h1 {
+      font-size: 18px;
+      margin: 0;
+    }
+    .tagline {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    main {
+      padding: 16px;
+      max-width: 1000px;
+      margin: 0 auto;
+      flex: 1;
+      box-sizing: border-box;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .controls-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .controls-buttons {
+      justify-content: flex-start;
+    }
+    label {
+      font-size: 12px;
+      color: #333;
+    }
+    input[type="text"],
+    input[type="number"] {
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      min-width: 120px;
+      box-sizing: border-box;
+    }
+    input[type="text"] {
+      flex: 1;
+      min-width: 200px;
+    }
+    button {
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1px solid #444;
+      background: #fff;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+    }
+    button.primary {
+      background: #111;
+      color: #fff;
+      border-color: #111;
+    }
+    button:active {
+      transform: scale(0.97);
+    }
+    #status {
+      font-size: 12px;
+      color: #555;
+      margin-top: 6px;
+    }
+    #resultado {
+      font-size: 14px;
+      margin-top: 10px;
+      line-height: 1.5;
+    }
+    .item {
+      padding: 8px 0;
+      border-top: 1px solid #eee;
+      display: grid;
+      grid-template-columns: 130px 1fr;
+      grid-column-gap: 12px;
+      align-items: flex-start;
+    }
+    .item:first-child {
+      border-top: none;
+    }
+    .produto-imagem-wrapper {
+      width: 120px;
+      height: 120px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #eee;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #fafafa;
+    }
+    .produto-imagem-wrapper img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: cover;
+      display: block;
+      cursor: pointer;
+    }
+    .produto-info {
+      display: flex;
+      flex-direction: column;
+    }
+    .preco {
+      font-size: 13px;
+      font-weight: 500;
+      margin-top: 4px;
+      color: #555;
+    }
+    .preco-final {
+      font-size: 16px;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+    .preco-sec {
+      font-size: 11px;
+      color: #777;
+    }
+    .badge-admin {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: #0b915e;
+      color: #fff;
+    }
+    .badge-orcamento {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: #1460d2;
+      color: #fff;
+    }
+    #adminConfig {
+      border-radius: 8px;
+      padding: 8px;
+      background: #f0f4f0;
+      margin-bottom: 8px;
+      display: none;
+    }
+    .orcamento-controls {
+      margin-top: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      font-size: 12px;
+    }
+    .orcamento-controls input[type="number"] {
+      width: 70px;
+      min-width: 70px;
+    }
+    .orcamento-subtotal {
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+    .orcamento-panel {
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px dashed #ccc;
+    }
+    .orcamento-panel h3 {
+      margin: 0 0 8px 0;
+      font-size: 15px;
+    }
+    .orcamento-acoes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .orcamento-linha {
+      font-size: 13px;
+      padding: 4px 0;
+      display: flex;
+      flex-wrap: nowrap;
+      justify-content: space-between;
+      gap: 8px;
+      border-top: 1px solid #f0f0f0;
+      align-items: center;
+    }
+    .orcamento-linha:first-child {
+      border-top: none;
+    }
+    .orcamento-desc {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 0;
+    }
+    .orcamento-desc span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .orcamento-thumb {
+      width: 50px;
+      height: 50px;
+      border-radius: 6px;
+      border: 1px solid #eee;
+      object-fit: cover;
+      background: #fafafa;
+    }
+    .orcamento-valores {
+      white-space: nowrap;
+      font-weight: 500;
+    }
+    .orcamento-total {
+      margin-top: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      text-align: right;
+    }
+    .btn-remover-orcamento {
+      border-color: #b3261e;
+      color: #b3261e;
+      background: #fff7f6;
+      padding: 4px 8px;
+      font-size: 11px;
+    }
+    footer {
+      font-size: 11px;
+      color: #777;
+      text-align: center;
+      padding: 8px;
+    }
+
+    /* Cabeçalho comercial do orçamento */
+    #orcamentoHeader {
+      margin-top: 10px;
+      margin-bottom: 4px;
+      padding: 8px;
+      border-radius: 8px;
+      background: #f7f7ff;
+      display: none;
+      font-size: 12px;
+    }
+    .orc-header-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .orc-header-row label {
+      display: flex;
+      flex-direction: column;
+      font-size: 11px;
+    }
+    .orc-header-row input {
+      font-size: 12px;
+      min-width: 160px;
+    }
+
+    /* Filtros de categoria */
+    .category-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      font-size: 12px;
+    }
+    .category-filters button {
+      padding: 4px 8px;
+      font-size: 11px;
+      border-radius: 999px;
+      border: 1px solid #bbb;
+      background: #fff;
+    }
+    .category-filters button.active {
+      background: #111;
+      color: #fff;
+      border-color: #111;
+    }
+
+    /* Modal de imagem ampliada */
+    #imageModal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    #imageModal img {
+      max-width: 90%;
+      max-height: 90%;
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
+
+    @media print {
+      header,
+      .controls,
+      .controls-row,
+      #adminConfig,
+      #status,
+      #btnFalar,
+      #btnBuscar,
+      #btnLimparBusca,
+      .category-filters {
+        display: none !important;
+      }
+      /* Esconde os cards de resultado da busca (parte em vermelho do print) */
+      #resultado .item {
+        display: none !important;
+      }
+      body {
+        background: #fff;
+      }
+      .card {
+        box-shadow: none;
+        border-radius: 0;
+      }
+      .orcamento-panel {
+        border-top: none;
+        margin-top: 0;
+      }
+      .orcamento-acoes {
+        display: none !important;
+      }
+      #imageModal {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Consulta de Preços – Starmobile</h1>
+      <div class="tagline">
+        Uso interno: pesquisa por código, nome e palavras-chave, com cálculo automático de IPI, frete, markup, desconto autorizado, modo orçamento e imagens dos produtos.
+      </div>
+    </div>
+    <div class="header-actions">
+      <span id="orcamentoBadge" class="badge-orcamento" style="display:none;">Modo orçamento</span>
+      <span id="adminBadge" class="badge-admin" style="display:none;">Modo gerente</span>
+      <button id="btnToggleOrcamento">🧾 Modo orçamento</button>
+      <button id="btnToggleAdmin">🔐 Modo gerente</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="card">
+      <div id="adminConfig">
+        <div class="controls-row">
+          <label for="ipiPercent">IPI (%):</label>
+          <input id="ipiPercent" type="number" step="0.01" placeholder="ex.: 5" />
+          <label for="fretePercent">Frete (%):</label>
+          <input id="fretePercent" type="number" step="0.01" placeholder="ex.: 5" />
+          <label for="markupPercent">Markup (%):</label>
+          <input id="markupPercent" type="number" step="0.01" placeholder="ex.: 10" />
+        </div>
+        <div class="controls-row">
+          <label for="maxDescontoPercent">Desconto máximo consultor (%):</label>
+          <input id="maxDescontoPercent" type="number" step="0.01" placeholder="ex.: 10" />
+          <button id="btnSalvarConfig">💾 Salvar</button>
+        </div>
+        <div class="preco-sec">
+          Estes percentuais serão aplicados a todas as consultas neste dispositivo/navegador. O desconto do consultor será limitado ao percentual máximo definido.
+        </div>
+      </div>
+
+      <div class="controls-row">
+        <label for="descontoPercent">Desconto consultor (%):</label>
+        <input id="descontoPercent" type="number" step="0.01" placeholder="ex.: 5" />
+      </div>
+
+      <div class="controls-row">
+        <div class="category-filters">
+          <span>Filtro rápido:</span>
+          <button type="button" id="btnCatTodos" class="active">Todos</button>
+          <button type="button" id="btnCatMesas">Mesas</button>
+          <button type="button" id="btnCatCadeiras">Cadeiras</button>
+          <button type="button" id="btnCatPoltronas">Poltronas</button>
+        </div>
+      </div>
+
+      <!-- Campo de busca em uma linha -->
+      <div class="controls">
+        <input id="campoBusca" type="text" placeholder="Ex.: 1467PM, CADEIRA ATENA COM DEBRUM FAIXA 2, ZOE VIDRO 2,20..." />
+      </div>
+      <!-- Botões em outra linha abaixo -->
+      <div class="controls controls-buttons">
+        <button id="btnFalar">🎤 <span>Falar</span></button>
+        <button id="btnBuscar" class="primary">🔎 <span>Buscar</span></button>
+        <button id="btnLimparBusca">🧹 <span>Limpar</span></button>
+      </div>
+
+      <!-- Cabeçalho comercial do orçamento -->
+      <div id="orcamentoHeader">
+        <div class="orc-header-row">
+          <label>
+            Cliente
+            <input type="text" id="orcCliente" placeholder="Nome do cliente" />
+          </label>
+          <label>
+            Telefone / WhatsApp
+            <input type="text" id="orcTelefone" placeholder="(00) 00000-0000" />
+          </label>
+        </div>
+        <div class="orc-header-row">
+          <label>
+            Vendedor
+            <input type="text" id="orcVendedor" placeholder="Nome do consultor" />
+          </label>
+          <label>
+            Validade do orçamento
+            <input type="text" id="orcValidade" value="7 dias" />
+          </label>
+        </div>
+      </div>
+
+      <div id="status"></div>
+      <div id="resultado"></div>
+    </div>
+  </main>
+
+  <footer>
+    Consulta interna de preços • Starmobile Design
+  </footer>
+
+  <!-- Modal de imagem ampliada -->
+  <div id="imageModal">
+    <img id="modalImage" src="" alt="Imagem ampliada" />
+  </div>
+
+  <script>
+    let produtos = [];
+    let frasesUnicas = [];
+    let isAdmin = false;
+    let modoOrcamento = false;
+    // orcamento[id] = { quantidade: number, maxFaixa?: number, temTela?: boolean, temVerniz?: boolean }
+    let orcamento = {};
+    // filtro de categoria: "", "MESA", "CADEIRA", "POLTRONA"
+    let categoriaFiltro = "";
+
+    // Tecidos por faixa (carregados de tecidos.json)
+    let tecidosPorFaixa = {};
+    // Listas auxiliares de opções
+    let coresOpcoes = [];
+    let coresMadeiraOpcoes = [];
+    let telaOpcoes = [];
+    let vernizOpcoes = [];
+
+    // Configuração de partes (frente/costas + acabamentos + observações) por código de produto
+    // Estrutura em sessionStorage (starmobile_partes_tecidos):
+    // {
+    //   "CODIGO": {
+    //     frente: { faixa: "FAIXA 1", tecido: "ABC123" },
+    //     costas: { faixa: "FAIXA 2", tecido: "DEF456" },
+    //     corEstrutura: { valor: "COR_X", naoSeAplica: true/false },
+    //     corMadeira: { valor: "COR_Y", naoSeAplica: true/false },
+    //     corTela: { valor: "TELA_X" },
+    //     verniz: { valor: "VERNIZ_X" },
+    //     observacoes: "texto livre"
+    //   },
+    //   ...
+    // }
+    const STORAGE_KEY_PARTES = "starmobile_partes_tecidos";
+
+    try {
+      // Zera qualquer configuração antiga persistida em localStorage para que
+      // um novo acesso sempre comece com os campos em branco.
+      localStorage.removeItem(STORAGE_KEY_PARTES);
+    } catch (e) {}
+
+    function getPartesConfig() {
+      try {
+        const raw = sessionStorage.getItem(STORAGE_KEY_PARTES);
+        return raw ? JSON.parse(raw) || {} : {};
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function savePartesConfig(cfg) {
+      try {
+        sessionStorage.setItem(STORAGE_KEY_PARTES, JSON.stringify(cfg || {}));
+      } catch (e) {
+        console.error("Erro ao salvar configuração de tecidos/acabamentos:", e);
+      }
+    }
+
+    function removerConfiguracaoDoProduto(codigo) {
+      const cfg = getPartesConfig();
+      if (cfg && cfg[codigo]) {
+        delete cfg[codigo];
+        savePartesConfig(cfg);
+      }
+    }
+
+    function extrairConfiguracaoDoProduto(produto) {
+      const textoBase = (
+        (produto.chaves || "") + " " +
+        (Array.isArray(produto._campos) ? produto._campos.join(" ") : "")
+      ).toUpperCase();
+
+      // FAIXA
+      let maxFaixa = 4;
+      const match = textoBase.match(/FAIXA\s*([1-4])/);
+      if (match) {
+        const n = parseInt(match[1], 10);
+        if (!isNaN(n) && n >= 1 && n <= 4) {
+          maxFaixa = n;
+        }
+      }
+
+      const temTela = textoBase.includes("COM TELA");
+      const temVerniz = textoBase.includes("VERNIZ");
+
+      return { maxFaixa, temTela, temVerniz };
+    }
+
+    function onFaixaParteChange(codigo, parte, faixa) {
+      const cfg = getPartesConfig();
+      if (!cfg[codigo]) cfg[codigo] = {};
+      if (!cfg[codigo][parte]) cfg[codigo][parte] = {};
+      cfg[codigo][parte].faixa = faixa || "";
+      cfg[codigo][parte].tecido = "";
+      savePartesConfig(cfg);
+
+            const parteClasse = parte
+        .replace(/([a-z])([A-Z])/g, "$1-$2")
+        .toLowerCase();
+
+      const selectTecido = document.querySelector(
+        `select.tecido-${parteClasse}[data-codigo="${codigo}"]`
+      );
+      if (selectTecido) {
+        let opts = '<option value="">Selecione o tecido...</option>';
+        if (faixa && tecidosPorFaixa && tecidosPorFaixa[faixa]) {
+          tecidosPorFaixa[faixa].forEach(t => {
+            opts += `<option value="${t}">${t}</option>`;
+          });
+        }
+        selectTecido.innerHTML = opts;
+      }
+    }
+
+    function onTecidoParteChange(codigo, parte, tecido) {
+      const cfg = getPartesConfig();
+      if (!cfg[codigo]) cfg[codigo] = {};
+      if (!cfg[codigo][parte]) cfg[codigo][parte] = {};
+      cfg[codigo][parte].tecido = tecido || "";
+      savePartesConfig(cfg);
+    }
+
+    function onObsParteChange(codigo, obs) {
+      const cfg = getPartesConfig();
+      if (!cfg[codigo]) cfg[codigo] = {};
+      cfg[codigo].observacoes = obs || "";
+      savePartesConfig(cfg);
+    }
+
+    function onCorEstruturaChange(codigo, valor) {
+      const cfg = getPartesConfig();
+      if (!cfg[codigo]) cfg[codigo] = {};
+      if (!cfg[codigo].corEstrutura) cfg[codigo].corEstrutura = {};
+      cfg[codigo].corEstrutura.valor = valor || "";
+      savePartesConfig(cfg);
+    }
+
+    function onCorMadeiraChange(codigo, valor) {
+      const cfg = getPartesConfig();
+      if (!cfg[codigo]) cfg[codigo] = {};
+      if (!cfg[codigo].corMadeira) cfg[codigo].corMadeira = {};
+      cfg[codigo].corMadeira.valor = valor || "";
+      savePartesConfig(cfg);
+    }
+
+    function onCorTelaChange(codigo, valor) {
+      const cfg = getPartesConfig();
+      if (!cfg[codigo]) cfg[codigo] = {};
+      if (!cfg[codigo].corTela) cfg[codigo].corTela = {};
+      cfg[codigo].corTela.valor = valor || "";
+      savePartesConfig(cfg);
+    }
+
+    function onVernizChange(codigo, valor) {
+      const cfg = getPartesConfig();
+      if (!cfg[codigo]) cfg[codigo] = {};
+      if (!cfg[codigo].verniz) cfg[codigo].verniz = {};
+      cfg[codigo].verniz.valor = valor || "";
+      savePartesConfig(cfg);
+    }
+
+        function onCorVidroLaminaChange(codigo, valor) {
+      const cfg = getPartesConfig();
+      if (!cfg[codigo]) cfg[codigo] = {};
+      if (!cfg[codigo].corVidroLamina) cfg[codigo].corVidroLamina = {};
+      cfg[codigo].corVidroLamina.valor = valor || "";
+      savePartesConfig(cfg);
+    }
+
+    function onCorPonteiraChange(codigo, valor) {
+      const cfg = getPartesConfig();
+      if (!cfg[codigo]) cfg[codigo] = {};
+      if (!cfg[codigo].detalhePonteira) cfg[codigo].detalhePonteira = {};
+      cfg[codigo].detalhePonteira.valor = valor || "";
+      savePartesConfig(cfg);
+    }
+
+    function onNaoSeAplicaChange(codigo, campo, checked) {
+      const cfg = getPartesConfig();
+      if (!cfg[codigo]) cfg[codigo] = {};
+      if (!cfg[codigo][campo]) cfg[codigo][campo] = {};
+      cfg[codigo][campo].naoSeAplica = !!checked;
+      
+      if (checked) {
+             if (campo === "detalhe" || campo === "acabamentoBase") {
+          cfg[codigo][campo].faixa = "";
+          cfg[codigo][campo].tecido = "";
+        } else {
+          cfg[codigo][campo].valor = "";
+        }
+      }
+
+      savePartesConfig(cfg);
+
+      if (campo === "corEstrutura" || campo === "corMadeira") {
+        const seletor = campo === "corEstrutura"
+          ? 'select.cor-estrutura'
+          : 'select.cor-madeira';
+        const sel = document.querySelector(`${seletor}[data-codigo="${codigo}"]`);
+        if (sel) {
+          sel.disabled = !!checked;
+          if (checked) sel.value = "";
+        }
+      }
+
+      if (campo === "detalhe") {
+        const selFaixa = document.querySelector(`select.faixa-detalhe[data-codigo="${codigo}"]`);
+        const selTecido = document.querySelector(`select.tecido-detalhe[data-codigo="${codigo}"]`);
+        [selFaixa, selTecido].forEach(sel => {
+          if (!sel) return;
+          sel.disabled = !!checked;
+          if (checked) sel.value = "";
+        });
+      }
+
+      if (campo === "acabamentoBase") {
+        const selFaixa = document.querySelector(`select.faixa-acabamento-base[data-codigo="${codigo}"]`);
+        const selTecido = document.querySelector(`select.tecido-acabamento-base[data-codigo="${codigo}"]`);
+        [selFaixa, selTecido].forEach(sel => {
+          if (!sel) return;
+          sel.disabled = !!checked;
+          if (checked) sel.value = "";
+        });
+      }
+    }
+const campoBusca = document.getElementById("campoBusca");
+    const statusSpan = document.getElementById("status");
+    const resultadoDiv = document.getElementById("resultado");
+    const btnFalar = document.getElementById("btnFalar");
+    const btnBuscar = document.getElementById("btnBuscar");
+    const btnLimparBusca = document.getElementById("btnLimparBusca");
+
+    const ipiInput = document.getElementById("ipiPercent");
+    const freteInput = document.getElementById("fretePercent");
+    const markupInput = document.getElementById("markupPercent");
+    const maxDescInput = document.getElementById("maxDescontoPercent");
+    const descontoInput = document.getElementById("descontoPercent");
+
+    const adminConfigDiv = document.getElementById("adminConfig");
+    const btnToggleAdmin = document.getElementById("btnToggleAdmin");
+    const btnSalvarConfig = document.getElementById("btnSalvarConfig");
+    const adminBadge = document.getElementById("adminBadge");
+
+    const btnToggleOrcamento = document.getElementById("btnToggleOrcamento");
+    const orcamentoBadge = document.getElementById("orcamentoBadge");
+    const orcamentoHeaderDiv = document.getElementById("orcamentoHeader");
+
+    const btnCatTodos = document.getElementById("btnCatTodos");
+    const btnCatMesas = document.getElementById("btnCatMesas");
+    const btnCatCadeiras = document.getElementById("btnCatCadeiras");
+    const btnCatPoltronas = document.getElementById("btnCatPoltronas");
+
+    const orcClienteInput = document.getElementById("orcCliente");
+    const orcTelefoneInput = document.getElementById("orcTelefone");
+    const orcVendedorInput = document.getElementById("orcVendedor");
+    const orcValidadeInput = document.getElementById("orcValidade");
+
+    const STORAGE_KEY_ADMIN = "starmobile_admin";
+    const STORAGE_KEY_IPI = "starmobile_ipi_percent";
+    const STORAGE_KEY_FRETE = "starmobile_frete_percent";
+    const STORAGE_KEY_MARKUP = "starmobile_markup_percent";
+    const STORAGE_KEY_MAX_DESC = "starmobile_max_desconto_percent";
+
+    const SENHA_GERENTE = "STAR2025";
+
+    // Modal imagem
+    const imageModal = document.getElementById("imageModal");
+    const modalImage = document.getElementById("modalImage");
+
+    function abrirImagemModal(src) {
+      modalImage.src = src;
+      imageModal.style.display = "flex";
+    }
+    imageModal.addEventListener("click", () => {
+      imageModal.style.display = "none";
+      modalImage.src = "";
+    });
+    // expor função para o onclick inline
+    window.abrirImagemModal = abrirImagemModal;
+
+    function normalizar(str) {
+      return String(str || "")
+        .toUpperCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
+    }
+
+    function formatarPreco(valor) {
+      return Number(valor).toFixed(2).replace(".", ",");
+    }
+
+    function numeroInteiroParaMetro(numStr) {
+      const n = parseInt(numStr, 10);
+      if (isNaN(n)) return null;
+      if (numStr.length === 4) {
+        return (n / 1000).toFixed(2);
+      } else if (numStr.length === 3) {
+        return (n / 100).toFixed(2);
+      }
+      return null;
+    }
+
+    function extrairNumeros(texto) {
+      if (!texto) return [];
+      let s = String(texto).toLowerCase().replace(/,/g, ".");
+      const nums = [];
+      const re = /\d+(?:\.\d+)?/g;
+      let m;
+      while ((m = re.exec(s)) !== null) {
+        const v = parseFloat(m[0]);
+        if (!isNaN(v)) nums.push(v);
+      }
+      return nums;
+    }
+
+    function normalizarDimensoes(texto) {
+      if (!texto) return "";
+      let t = String(texto);
+      let lower = t.toLowerCase();
+
+      lower = lower
+        .replace(/ponto/g, ".")
+        .replace(/vírgula/g, ".")
+        .replace(/virgula/g, ".");
+
+      lower = lower.replace(/\b(\d{3,4})\b/g, (m, a) => {
+        const conv = numeroInteiroParaMetro(a);
+        return conv !== null ? conv : m;
+      });
+
+      lower = lower.replace(/\b(\d+)[\.](\d{2})\b/g, (m, a, b) => {
+        const num = parseFloat(a + "." + b);
+        if (isNaN(num)) return m;
+        return num.toFixed(1);
+      });
+
+      return lower;
+    }
+
+    function carregarConfigNosInputs() {
+      const ipi = parseFloat(localStorage.getItem(STORAGE_KEY_IPI));
+      const frete = parseFloat(localStorage.getItem(STORAGE_KEY_FRETE));
+      const markup = parseFloat(localStorage.getItem(STORAGE_KEY_MARKUP));
+      const maxDesc = parseFloat(localStorage.getItem(STORAGE_KEY_MAX_DESC));
+
+      if (!isNaN(ipi)) ipiInput.value = ipi.toString();
+      if (!isNaN(frete)) freteInput.value = frete.toString();
+      if (!isNaN(markup)) markupInput.value = markup.toString();
+      if (!isNaN(maxDesc)) maxDescInput.value = maxDesc.toString();
+    }
+
+    function obterPercentual(valorStr) {
+      const v = parseFloat(String(valorStr).replace(",", "."));
+      if (isNaN(v)) return 0;
+      return v;
+    }
+
+    function obterConfigAtual() {
+      const ipiStored = parseFloat(localStorage.getItem(STORAGE_KEY_IPI));
+      const freteStored = parseFloat(localStorage.getItem(STORAGE_KEY_FRETE));
+      const markupStored = parseFloat(localStorage.getItem(STORAGE_KEY_MARKUP));
+      const maxDescStored = parseFloat(localStorage.getItem(STORAGE_KEY_MAX_DESC));
+
+      const ipi = !isNaN(ipiStored) ? ipiStored : 0;
+      const frete = !isNaN(freteStored) ? freteStored : 0;
+      const markup = !isNaN(markupStored) ? markupStored : 0;
+      const maxDesc = !isNaN(maxDescStored) ? maxDescStored : 0;
+
+      return { ipi, frete, markup, maxDesc };
+    }
+
+    function calcularFatoresEDesconto() {
+      const { ipi, frete, markup, maxDesc } = obterConfigAtual();
+      const fatorIPI = 1 + (ipi / 100);
+      const fatorFrete = 1 + (frete / 100);
+      const fatorMarkup = 1 + (markup / 100);
+
+      let descontoDigitado = obterPercentual(descontoInput.value);
+      let descontoAplicado = descontoDigitado;
+
+      if (!isAdmin && descontoDigitado > maxDesc) {
+        descontoAplicado = maxDesc;
+      }
+
+      const fatorDesconto = 1 - (descontoAplicado / 100);
+
+      let avisoDesconto = "";
+      if (!isAdmin && descontoDigitado > maxDesc && maxDesc > 0) {
+        avisoDesconto = `Desconto limitado a ${maxDesc.toFixed(2)}% pela gerência.`;
+      } else if (!isAdmin && descontoDigitado > 0 && maxDesc === 0) {
+        avisoDesconto = `Nenhum desconto autorizado pela gerência.`;
+      }
+
+      return { ipi, frete, markup, maxDesc, fatorIPI, fatorFrete, fatorMarkup, descontoAplicado, fatorDesconto, avisoDesconto };
+    }
+
+    function calcularValoresProduto(produto, fatores) {
+      if (produto.preco_lista == null) {
+        return { base: null, valorComAcrescimos: null, valorFinal: null };
+      }
+      const base = Number(produto.preco_lista);
+      const valorComAcrescimos = base * fatores.fatorIPI * fatores.fatorFrete * fatores.fatorMarkup;
+      const valorFinal = valorComAcrescimos * fatores.fatorDesconto;
+      return { base, valorComAcrescimos, valorFinal };
+    }
+
+    function aplicarModoAdminUI() {
+      if (isAdmin) {
+        adminConfigDiv.style.display = "block";
+        adminBadge.style.display = "inline-block";
+        btnToggleAdmin.textContent = "🚪 Sair do modo gerente";
+        carregarConfigNosInputs();
+      } else {
+        adminConfigDiv.style.display = "none";
+        adminBadge.style.display = "none";
+        btnToggleAdmin.textContent = "🔐 Modo gerente";
+      }
+    }
+
+    function aplicarModoOrcamentoUI() {
+      if (modoOrcamento) {
+        orcamentoBadge.style.display = "inline-block";
+        btnToggleOrcamento.textContent = "🧾 Sair do modo orçamento";
+        orcamentoHeaderDiv.style.display = "block";
+      } else {
+        orcamentoBadge.style.display = "none";
+        btnToggleOrcamento.textContent = "🧾 Modo orçamento";
+        orcamentoHeaderDiv.style.display = "none";
+      }
+      if (campoBusca.value.trim()) {
+        buscarProduto(campoBusca.value);
+      } else if (modoOrcamento) {
+        resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
+      } else {
+        resultadoDiv.innerHTML = "";
+      }
+    }
+
+    function aplicarFiltroCategoriaUI() {
+      const buttons = [btnCatTodos, btnCatMesas, btnCatCadeiras, btnCatPoltronas];
+      buttons.forEach(b => b.classList.remove("active"));
+      if (!categoriaFiltro) btnCatTodos.classList.add("active");
+      else if (categoriaFiltro === "MESA") btnCatMesas.classList.add("active");
+      else if (categoriaFiltro === "CADEIRA") btnCatCadeiras.classList.add("active");
+      else if (categoriaFiltro === "POLTRONA") btnCatPoltronas.classList.add("active");
+    }
+
+    carregarConfigNosInputs();
+
+    fetch("produtos.json")
+      .then(res => {
+        if (!res.ok) throw new Error("Erro HTTP: " + res.status);
+        return res.json();
+      })
+      .then(data => {
+        const setFrases = new Set();
+        produtos = (data || []).map((p, idx) => {
+          const campos = Array.isArray(p.campos) ? p.campos : (p.chaves ? [p.chaves] : []);
+          const camposNorm = campos.map(normalizar).filter(Boolean);
+          const codigoNorm = normalizar(p.codigo);
+
+          let dimVals = [];
+          campos.forEach(c => {
+            dimVals = dimVals.concat(extrairNumeros(c));
+          });
+
+          camposNorm.forEach(f => setFrases.add(f));
+          return {
+            ...p,
+            _id: idx,
+            _campos: campos,
+            _camposNorm: camposNorm,
+            _codigoNorm: codigoNorm,
+            _dimVals: dimVals
+          };
+        });
+        frasesUnicas = Array.from(setFrases);
+        statusSpan.textContent = "Produtos carregados: " + produtos.length;
+      })
+      .catch(err => {
+        console.error("Erro ao carregar produtos.json:", err);
+        statusSpan.textContent = "Erro ao carregar produtos.json";
+      });
+
+
+    // Carrega tecidos.json
+    fetch("tecidos.json")
+      .then(res => {
+        if (!res.ok) throw new Error("Erro HTTP tecidos: " + res.status);
+        return res.json();
+      })
+      .then(data => {
+        tecidosPorFaixa = data || {};
+        console.log("Tecidos carregados:", tecidosPorFaixa);
+      })
+      .catch(err => {
+        console.error("Erro ao carregar tecidos.json:", err);
+      });
+
+    // Carrega cores.json
+    fetch("cores.json")
+      .then(res => {
+        if (!res.ok) throw new Error("Erro HTTP cores: " + res.status);
+        return res.json();
+      })
+      .then(data => {
+        coresOpcoes = Array.isArray(data) ? data : [];
+        console.log("Cores carregadas:", coresOpcoes);
+      })
+      .catch(err => {
+        console.error("Erro ao carregar cores.json:", err);
+      });
+
+    // Carrega coresmadeira.json
+    fetch("coresmadeira.json")
+      .then(res => {
+        if (!res.ok) throw new Error("Erro HTTP cores madeira: " + res.status);
+        return res.json();
+      })
+      .then(data => {
+        coresMadeiraOpcoes = Array.isArray(data) ? data : [];
+        console.log("Cores de madeira carregadas:", coresMadeiraOpcoes);
+      })
+      .catch(err => {
+        console.error("Erro ao carregar coresmadeira.json:", err);
+      });
+
+    // Carrega tela.json
+    fetch("tela.json")
+      .then(res => {
+        if (!res.ok) throw new Error("Erro HTTP tela: " + res.status);
+        return res.json();
+      })
+      .then(data => {
+        telaOpcoes = Array.isArray(data) ? data : [];
+        console.log("Telas carregadas:", telaOpcoes);
+      })
+      .catch(err => {
+        console.error("Erro ao carregar tela.json:", err);
+      });
+
+    // Carrega verniz.json
+    fetch("verniz.json")
+      .then(res => {
+        if (!res.ok) throw new Error("Erro HTTP verniz: " + res.status);
+        return res.json();
+      })
+      .then(data => {
+        vernizOpcoes = Array.isArray(data) ? data : [];
+        console.log("Vernizes carregados:", vernizOpcoes);
+      })
+      .catch(err => {
+        console.error("Erro ao carregar verniz.json:", err);
+      });
+
+    if (localStorage.getItem(STORAGE_KEY_ADMIN) === "1") {
+      isAdmin = true;
+    }
+    aplicarModoAdminUI();
+    aplicarFiltroCategoriaUI();
+
+    function buscarProduto(termoBruto) {
+      let termoOriginal = String(termoBruto || "").trim();
+      if (!termoOriginal) {
+        statusSpan.textContent = "Informe um código ou termo para busca.";
+        resultadoDiv.innerHTML = modoOrcamento ? renderizarResumoOrcamento(calcularFatoresEDesconto()) : "";
+        return;
+      }
+
+      if (!produtos || !produtos.length) {
+        statusSpan.textContent = "Nenhum produto carregado (ver produtos.json).";
+        resultadoDiv.innerHTML = "";
+        return;
+      }
+
+      const termoComDim = normalizarDimensoes(termoOriginal);
+      const numerosBusca = extrairNumeros(termoComDim);
+
+      const termoNorm = normalizar(termoComDim);
+      const termoTokens = termoNorm.split(/\s+/).filter(Boolean);
+
+      let matches = [];
+
+      // 1) Código exato
+      const exato = produtos.find(p => p._codigoNorm === termoNorm);
+      if (exato) {
+        matches = [exato];
+      } else {
+        // 2) Código parcial
+        const termoSemEspaco = termoNorm.replace(/\s+/g, "");
+        const codigoParcial = produtos.find(p =>
+          p._codigoNorm.replace(/\s+/g, "").includes(termoSemEspaco)
+        );
+        if (codigoParcial) {
+          matches = [codigoParcial];
+        } else {
+          // 3) Frases completas
+          const frasesBuscadas = frasesUnicas.filter(f => {
+            const fTokens = f.split(/\s+/).filter(Boolean);
+            if (fTokens.length === 0) return false;
+            if (fTokens.length === 1) {
+              return termoTokens.includes(fTokens[0]);
+            } else {
+              return termoNorm.includes(f);
+            }
+          });
+
+          if (frasesBuscadas.length > 0) {
+            matches = produtos.filter(p =>
+              frasesBuscadas.every(fr =>
+                p._camposNorm.some(cf => cf.includes(fr))
+              )
+            );
+          } else {
+            // 4) Fallback por tokens
+            const tokens = termoTokens;
+            matches = produtos.filter(p => {
+              const texto = p._codigoNorm + " " + p._camposNorm.join(" ");
+              return tokens.every(t => texto.includes(t));
+            });
+          }
+        }
+      }
+
+      // Filtrar por dimensões numéricas (quando houver)
+      if (numerosBusca.length > 0) {
+        const tol = 0.01;
+        matches = matches.filter(p => {
+          if (!p._dimVals || p._dimVals.length === 0) return true;
+          return numerosBusca.every(nb =>
+            p._dimVals.some(dp => Math.abs(dp - nb) < tol)
+          );
+        });
+      }
+
+      // Filtrar por categoria (MESA, CADEIRA, POLTRONA)
+      if (categoriaFiltro) {
+        matches = matches.filter(p =>
+          p._camposNorm.some(cf => cf.split(/\s+/).includes(categoriaFiltro))
+        );
+      }
+
+      if (!matches || matches.length === 0) {
+        statusSpan.textContent = "Produto não encontrado para: " + termoOriginal;
+        resultadoDiv.innerHTML = modoOrcamento ? renderizarResumoOrcamento(calcularFatoresEDesconto()) : "";
+        return;
+      }
+
+      if (matches.length === 1) {
+        statusSpan.textContent = "1 produto encontrado";
+      } else {
+        statusSpan.textContent = matches.length + " produtos encontrados";
+      }
+
+      const fatores = calcularFatoresEDesconto();
+
+      let html = "";
+      if (matches.length > 1) {
+        html += `<div><strong>Foram encontradas ${matches.length} opções para a sua busca:</strong></div>`;
+      }
+
+      matches.forEach((p) => {
+        const valores = calcularValoresProduto(p, fatores);
+        const id = p._id;
+
+        html += `<div class="item">`;
+
+        // Coluna da imagem
+        html += `<div class="produto-imagem-wrapper">
+          <img src="imagens/${p.codigo}.jpg" alt="Imagem ${p.codigo}"
+               onclick="abrirImagemModal('imagens/${p.codigo}.jpg')"
+               onerror="this.style.display='none';" />
+        </div>`;
+
+        // Coluna de informações
+        html += `<div class="produto-info">`;
+        html += `<div><strong>Código:</strong> ${p.codigo}</div>`;
+        if (p.chaves) {
+          html += `<div><strong>Descrição:</strong> ${p.chaves}</div>`;
+        }
+
+        if (valores.base != null) {
+          if (isAdmin) {
+            html += `<div class="preco">Tabela: R$ ${formatarPreco(valores.base)}</div>`;
+            html += `<div class="preco">Com IPI ${fatores.ipi.toFixed(2)}%, frete ${fatores.frete.toFixed(2)}% e markup ${fatores.markup.toFixed(2)}%: R$ ${formatarPreco(valores.valorComAcrescimos)}</div>`;
+            if (fatores.descontoAplicado > 0) {
+              html += `<div class="preco-final">Com desconto ${fatores.descontoAplicado.toFixed(2)}%: R$ ${formatarPreco(valores.valorFinal)}</div>`;
+            } else {
+              html += `<div class="preco-final">Valor final: R$ ${formatarPreco(valores.valorComAcrescimos)}</div>`;
+            }
+          } else {
+            html += `<div class="preco-final">Valor: R$ ${formatarPreco(valores.valorFinal)}</div>`;
+            html += `<div class="preco-sec">Valor calculado com IPI, frete, markup e desconto autorizado pela gerência.</div>`;
+          }
+
+          if (modoOrcamento) {
+            const emOrc = orcamento[id];
+            const qtd = emOrc ? emOrc.quantidade : 1;
+            const subtotal = valores.valorFinal * qtd;
+            const checkedAttr = emOrc ? "checked" : "";
+            html += `<div class="orcamento-controls">
+              <label><input type="checkbox" class="chk-orcamento" data-id="${id}" ${checkedAttr}> Incluir no orçamento</label>
+              <label>Qtd:
+                <input type="number" min="1" value="${qtd}" class="input-qtd-orcamento" data-id="${id}">
+              </label>
+              <span class="orcamento-subtotal" data-id="${id}">Subtotal: R$ ${formatarPreco(subtotal)}</span>
+              ${emOrc ? `<button type="button" class="btn-remover-orcamento" data-id="${id}">🗑️ Remover</button>` : ""}
+            </div>`;
+          }
+        } else {
+          html += `<div class="preco-sec">Sem preço de tabela cadastrado.</div>`;
+        }
+
+        html += `</div>`; // produto-info
+        html += `</div>`; // item
+      });
+
+      if (fatores.avisoDesconto) {
+        html = `<div class="preco-sec">${fatores.avisoDesconto}</div>` + html;
+      }
+
+      if (modoOrcamento) {
+        html += renderizarResumoOrcamento(fatores);
+      }
+
+      resultadoDiv.innerHTML = html;
+    }
+
+    function renderizarResumoOrcamento(fatores) {
+      const ids = Object.keys(orcamento);
+      if (!modoOrcamento) return "";
+      if (ids.length === 0) {
+        return `<div class="orcamento-panel"><h3>Orçamento atual</h3><div class="preco-sec">Nenhum item incluído ainda. Marque "Incluir no orçamento" nos produtos desejados.</div></div>`;
+      }
+
+      let total = 0;
+      let linhas = "";
+
+      const partesConfig = getPartesConfig();
+
+      ids.forEach(id => {
+        const item = orcamento[id];
+        const p = produtos.find(pp => String(pp._id) === String(id));
+        if (!p || p.preco_lista == null) return;
+        const valores = calcularValoresProduto(p, fatores);
+        const qtd = item.quantidade || 1;
+        const subtotal = valores.valorFinal * qtd;
+        total += subtotal;
+
+        const desc = p.chaves || "";
+        const tipoTexto = (p.chaves || "").toUpperCase();
+        const maxFaixa = item.maxFaixa && item.maxFaixa >= 1 && item.maxFaixa <= 4 ? item.maxFaixa : 4;
+        const temTela = !!item.temTela;
+        const temVerniz = !!item.temVerniz;
+
+        linhas += `<div class="orcamento-linha">
+          <div class="orcamento-desc">
+            <img class="orcamento-thumb" src="imagens/${p.codigo}.jpg" alt="${p.codigo}" onerror="this.style.display='none';" />
+            <span>${p.codigo} – ${desc}</span>
+          </div>
+          <div class="orcamento-valores">
+            R$ ${formatarPreco(valores.valorFinal)} x ${qtd} = R$ ${formatarPreco(subtotal)}
+          </div>
+          <button type="button" class="btn-remover-orcamento" data-id="${id}">🗑️ Remover</button>
+        </div>`;
+
+        // Para cadeiras, banquetas e poltronas, exibir blocos de configuração de tecidos/acabamentos
+        if (
+          tipoTexto.includes("CADEIRA") ||
+          tipoTexto.includes("BANQUETA") ||
+          tipoTexto.includes("POLTRONA")
+        ) {
+          const cfgItem = partesConfig[p.codigo] || {};
+          const frente = cfgItem.frente || {};
+          const costas = cfgItem.costas || {};
+          const detalhe = cfgItem.detalhe || {};
+          const corEstrutura = cfgItem.corEstrutura || {};
+          const corMadeira = cfgItem.corMadeira || {};
+          const corTela = cfgItem.corTela || {};
+          const verniz = cfgItem.verniz || {};
+          const obs = cfgItem.observacoes || "";
+
+          function montarOpcoesFaixa(selecionada, maxFaixaNum) {
+            let opts = '<option value="">Selecione a faixa...</option>';
+            for (let n = 1; n <= maxFaixaNum; n++) {
+              const label = `FAIXA ${n}`;
+              const sel = selecionada === label ? "selected" : "";
+              opts += `<option value="${label}" ${sel}>${label}</option>`;
+            }
+            return opts;
+          }
+
+          function montarOpcoesTecido(faixa, selecionado) {
+            let opts = '<option value="">Selecione o tecido...</option>';
+            if (faixa && tecidosPorFaixa && tecidosPorFaixa[faixa]) {
+              tecidosPorFaixa[faixa].forEach(t => {
+                const sel = selecionado === t ? "selected" : "";
+                opts += `<option value="${t}" ${sel}>${t}</option>`;
+              });
+            }
+            return opts;
+          }
+
+          function montarOpcoesGenericas(lista, selecionado, labelPadrao) {
+            let opts = `<option value="">${labelPadrao}</option>`;
+            if (Array.isArray(lista)) {
+              lista.forEach(v => {
+                const sel = selecionado === v ? "selected" : "";
+                opts += `<option value="${v}" ${sel}>${v}</option>`;
+              });
+            }
+            return opts;
+          }
+
+          const naoAplicaEstrutura = !!corEstrutura.naoSeAplica;
+          const naoAplicaMadeira = !!corMadeira.naoSeAplica;
+          const naoAplicaDetalhe = !!detalhe.naoSeAplica;
+
+          // FRENTE (encosto/assento)
+          linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
+            <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center; flex-wrap: wrap;">
+              <strong>Frente (encosto/assento):</strong>
+              <select class="faixa-frente" data-codigo="${p.codigo}"
+                      onchange="onFaixaParteChange('${p.codigo}', 'frente', this.value)">
+                ${montarOpcoesFaixa(frente.faixa || "", maxFaixa)}
+              </select>
+              <select class="tecido-frente" data-codigo="${p.codigo}"
+                      onchange="onTecidoParteChange('${p.codigo}', 'frente', this.value)">
+                ${montarOpcoesTecido(frente.faixa || "", frente.tecido || "")}
+              </select>
+            </div>
+          </div>`;
+
+          // COSTAS
+          linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
+            <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center; flex-wrap: wrap;">
+              <strong>Costas:</strong>
+              <select class="faixa-costas" data-codigo="${p.codigo}"
+                      onchange="onFaixaParteChange('${p.codigo}', 'costas', this.value)">
+                ${montarOpcoesFaixa(costas.faixa || "", maxFaixa)}
+              </select>
+              <select class="tecido-costas" data-codigo="${p.codigo}"
+                      onchange="onTecidoParteChange('${p.codigo}', 'costas', this.value)">
+                ${montarOpcoesTecido(costas.faixa || "", costas.tecido || "")}
+              </select>
+            </div>
+          </div>`;
+
+          // DETALHE (não restringe pela faixa máxima do produto)
+          const maxFaixaDetalhe = 4;
+          linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
+            <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center; flex-wrap: wrap;">
+              <strong>Detalhe:</strong>
+              <select class="faixa-detalhe" data-codigo="${p.codigo}"
+                      onchange="onFaixaParteChange('${p.codigo}', 'detalhe', this.value)"
+                      ${naoAplicaDetalhe ? "disabled" : ""}>
+                ${montarOpcoesFaixa(detalhe.faixa || "", maxFaixaDetalhe)}
+              </select>
+              <select class="tecido-detalhe" data-codigo="${p.codigo}"
+                      onchange="onTecidoParteChange('${p.codigo}', 'detalhe', this.value)"
+                      ${naoAplicaDetalhe ? "disabled" : ""}>
+                ${montarOpcoesTecido(detalhe.faixa || "", detalhe.tecido || "")}
+              </select>
+              <label style="display:flex; align-items:center; gap:4px; font-size:11px;">
+                <input type="checkbox" class="chk-detalhe-nao-aplica" data-codigo="${p.codigo}"
+                       onchange="onNaoSeAplicaChange('${p.codigo}', 'detalhe', this.checked)"
+                       ${naoAplicaDetalhe ? "checked" : ""}>
+                Não se aplica
+              </label>
+            </div>
+          </div>`;
+
+          // COR DA ESTRUTURA – lista Cores + flag Não se aplica
+          linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
+            <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center; flex-wrap: wrap;">
+              <strong>Cor da Estrutura:</strong>
+              <select class="cor-estrutura" data-codigo="${p.codigo}"
+                      onchange="onCorEstruturaChange('${p.codigo}', this.value)"
+                      ${naoAplicaEstrutura ? "disabled" : ""}>
+                ${montarOpcoesGenericas(coresOpcoes, corEstrutura.valor || "", "Selecione a cor...")}
+              </select>
+              <label style="display:flex; align-items:center; gap:4px; font-size:11px;">
+                <input type="checkbox" class="chk-cor-estrutura-nao-aplica" data-codigo="${p.codigo}"
+                       onchange="onNaoSeAplicaChange('${p.codigo}', 'corEstrutura', this.checked)"
+                       ${naoAplicaEstrutura ? "checked" : ""}>
+                Não se aplica
+              </label>
+            </div>
+          </div>`;
+
+          // COR DA MADEIRA – lista Cores + flag Não se aplica
+          linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
+            <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center; flex-wrap: wrap;">
+              <strong>Cor da Madeira:</strong>
+              <select class="cor-madeira" data-codigo="${p.codigo}"
+                      onchange="onCorMadeiraChange('${p.codigo}', this.value)"
+                      ${naoAplicaMadeira ? "disabled" : ""}>
+                ${montarOpcoesGenericas(coresMadeiraOpcoes, corMadeira.valor || "", "Selecione a cor...")}
+              </select>
+              <label style="display:flex; align-items:center; gap:4px; font-size:11px;">
+                <input type="checkbox" class="chk-cor-madeira-nao-aplica" data-codigo="${p.codigo}"
+                       onchange="onNaoSeAplicaChange('${p.codigo}', 'corMadeira', this.checked)"
+                       ${naoAplicaMadeira ? "checked" : ""}>
+                Não se aplica
+              </label>
+            </div>
+          </div>`;
+
+          // COR DA TELA – aparece só se no produto tiver "COM TELA"
+          if (temTela) {
+            linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
+              <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center; flex-wrap: wrap;">
+                <strong>Cor da Tela:</strong>
+                <select class="cor-tela" data-codigo="${p.codigo}"
+                        onchange="onCorTelaChange('${p.codigo}', this.value)">
+                  ${montarOpcoesGenericas(telaOpcoes, corTela.valor || "", "Selecione a tela...")}
+                </select>
+              </div>
+            </div>`;
+          }
+
+          // VERNIZ – aparece só se no produto tiver "VERNIZ"
+          if (temVerniz) {
+            linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
+              <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center; flex-wrap: wrap;">
+                <strong>Verniz:</strong>
+                <select class="verniz" data-codigo="${p.codigo}"
+                        onchange="onVernizChange('${p.codigo}', this.value)">
+                  ${montarOpcoesGenericas(vernizOpcoes, verniz.valor || "", "Selecione o verniz...")}
+                </select>
+              </div>
+            </div>`;
+          }
+
+          // OBSERVAÇÕES
+          linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
+            <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: flex-start; flex-direction: column;">
+              <strong>Observações:</strong>
+              <textarea class="obs-partes" data-codigo="${p.codigo}" rows="2"
+                        oninput="onObsParteChange('${p.codigo}', this.value)"
+                        style="width: 100%; max-width: 520px; font-size: 12px; padding: 4px 6px; border-radius: 4px; border: 1px solid #ccc; resize: vertical;">${obs}</textarea>
+            </div>
+          </div>`;
+                  } else if (
+          tipoTexto.includes("MESA") &&
+          tipoTexto.includes("ZOE") &&
+          tipoTexto.includes("JANTAR")
+        ) {
+          const cfgItem = partesConfig[p.codigo] || {};
+          const corVidroLamina = cfgItem.corVidroLamina || {};
+          const acabamentoBase = cfgItem.acabamentoBase || {};
+          const detalhePonteira = cfgItem.detalhePonteira || {};
+          const obs = cfgItem.observacoes || "";
+          const naoAplicaAcabamento = !!acabamentoBase.naoSeAplica;
+
+          function montarOpcoesFaixa(selecionada, maxFaixaNum) {
+            let opts = '<option value="">Selecione a faixa...</option>';
+            for (let n = 1; n <= maxFaixaNum; n++) {
+              const label = `FAIXA ${n}`;
+              const sel = selecionada === label ? "selected" : "";
+              opts += `<option value="${label}" ${sel}>${label}</option>`;
+            }
+            return opts;
+          }
+
+          function montarOpcoesTecido(faixa, selecionado) {
+            let opts = '<option value="">Selecione o tecido...</option>';
+            if (faixa && tecidosPorFaixa && tecidosPorFaixa[faixa]) {
+              tecidosPorFaixa[faixa].forEach(t => {
+                const sel = selecionado === t ? "selected" : "";
+                opts += `<option value="${t}" ${sel}>${t}</option>`;
+              });
+            }
+            return opts;
+          }
+
+          function montarOpcoesGenericas(lista, selecionado, labelPadrao) {
+            let opts = `<option value="">${labelPadrao}</option>`;
+            if (Array.isArray(lista)) {
+              lista.forEach(v => {
+                const sel = selecionado === v ? "selected" : "";
+                opts += `<option value="${v}" ${sel}>${v}</option>`;
+              });
+            }
+            return opts;
+          }
+
+          // COR DO VIDRO / LÂMINA – lista cores gerais
+          linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
+            <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center; flex-wrap: wrap;">
+              <strong>Cor do Vidro/Lâmina:</strong>
+              <select class="cor-vidro-lamina" data-codigo="${p.codigo}"
+                      onchange="onCorVidroLaminaChange('${p.codigo}', this.value)">
+                ${montarOpcoesGenericas(coresOpcoes, corVidroLamina.valor || "", "Selecione a cor...")}
+              </select>
+            </div>
+          </div>`;
+
+          // ACABAMENTO BASE – faixa + tecido, com opção Não se aplica
+          const maxFaixaBase = 4;
+          linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
+            <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center; flex-wrap: wrap;">
+              <strong>Acabamento Base:</strong>
+              <select class="faixa-acabamento-base" data-codigo="${p.codigo}"
+                      onchange="onFaixaParteChange('${p.codigo}', 'acabamentoBase', this.value)"
+                      ${naoAplicaAcabamento ? "disabled" : ""}>
+                ${montarOpcoesFaixa(acabamentoBase.faixa || "", maxFaixaBase)}
+              </select>
+              <select class="tecido-acabamento-base" data-codigo="${p.codigo}"
+                      onchange="onTecidoParteChange('${p.codigo}', 'acabamentoBase', this.value)"
+                      ${naoAplicaAcabamento ? "disabled" : ""}>
+                ${montarOpcoesTecido(acabamentoBase.faixa || "", acabamentoBase.tecido || "")}
+              </select>
+              <label style="display:flex; align-items:center; gap:4px; font-size:11px;">
+                <input type="checkbox" class="chk-acabamento-base-nao-aplica" data-codigo="${p.codigo}"
+                       onchange="onNaoSeAplicaChange('${p.codigo}', 'acabamentoBase', this.checked)"
+                       ${naoAplicaAcabamento ? "checked" : ""}>
+                Não se aplica
+              </label>
+            </div>
+          </div>`;
+
+          // DETALHE / PONTEIRA – cores de madeira
+          linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
+            <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: center; flex-wrap: wrap;">
+              <strong>Detalhe/Ponteira:</strong>
+              <select class="cor-detalhe-ponteira" data-codigo="${p.codigo}"
+                      onchange="onCorPonteiraChange('${p.codigo}', this.value)">
+                ${montarOpcoesGenericas(coresMadeiraOpcoes, detalhePonteira.valor || "", "Selecione a cor...")}
+              </select>
+            </div>
+          </div>`;
+
+          
+          // OBSERVAÇÕES – campo de texto livre igual a cadeiras/poltronas
+          linhas += `<div class="orcamento-linha" style="font-size: 12px; padding-top: 2px;">
+            <div class="orcamento-desc" style="padding-left: 48px; gap: 6px; align-items: flex-start; flex-direction: column;">
+              <strong>Observações:</strong>
+              <textarea class="obs-partes" data-codigo="${p.codigo}" rows="2"
+                        oninput="onObsParteChange('${p.codigo}', this.value)"
+                        style="width: 100%; max-width: 520px; font-size: 12px; padding: 4px 6px; border-radius: 4px; border: 1px solid #ccc; resize: vertical;">${obs}</textarea>
+            </div>
+          </div>`;
+        }
+      });
+
+      return `<div class="orcamento-panel">
+        <h3>Orçamento atual</h3>
+        <div class="orcamento-acoes">
+          <button type="button" id="btnLimparOrcamento">🧹 Limpar orçamento</button>
+          <button type="button" id="btnCopiarOrcamento">📋 Copiar orçamento</button>
+          <button type="button" id="btnImprimirOrcamento">🖨️ Imprimir / PDF</button>
+        </div>
+        ${linhas}
+        <div class="orcamento-total">Total do orçamento: R$ ${formatarPreco(total)}</div>
+      </div>`;
+    }
+function gerarTextoOrcamento(fatores) {
+      const ids = Object.keys(orcamento);
+      if (ids.length === 0) {
+        return "Orçamento vazio.";
+      }
+      let linhas = [];
+      let total = 0;
+
+      const cliente = orcClienteInput.value.trim();
+      const telefone = orcTelefoneInput.value.trim();
+      const vendedor = orcVendedorInput.value.trim();
+      const validade = orcValidadeInput.value.trim();
+
+      if (cliente || telefone || vendedor || validade) {
+        linhas.push(
+          `Cliente: ${cliente || "-"}\nTelefone: ${telefone || "-"}\nVendedor: ${vendedor || "-"}\nValidade: ${validade || "7 dias"}\n`
+        );
+      }
+
+      ids.forEach(id => {
+        const item = orcamento[id];
+        const p = produtos.find(pp => String(pp._id) === String(id));
+        if (!p || p.preco_lista == null) return;
+        const valores = calcularValoresProduto(p, fatores);
+        const qtd = item.quantidade || 1;
+        const subtotal = valores.valorFinal * qtd;
+        total += subtotal;
+        const desc = p.chaves || "";
+
+        linhas.push(
+          `${p.codigo} – ${desc}\nValor: R$ ${formatarPreco(valores.valorFinal)} x ${qtd} = R$ ${formatarPreco(subtotal)}`
+        );
+      });
+
+      linhas.push(`\nTotal do orçamento: R$ ${formatarPreco(total)}`);
+      return linhas.join("\n\n");
+    }
+
+    btnBuscar.addEventListener("click", () => {
+      buscarProduto(campoBusca.value);
+    });
+
+    campoBusca.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        buscarProduto(campoBusca.value);
+      }
+    });
+
+    // Botão LIMPAR busca
+    btnLimparBusca.addEventListener("click", () => {
+      campoBusca.value = "";
+      statusSpan.textContent = "";
+      if (modoOrcamento) {
+        resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
+      } else {
+        resultadoDiv.innerHTML = "";
+      }
+    });
+
+    descontoInput.addEventListener("change", () => {
+      if (campoBusca.value.trim()) buscarProduto(campoBusca.value);
+      else if (modoOrcamento) resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
+    });
+
+    btnToggleAdmin.addEventListener("click", () => {
+      if (!isAdmin) {
+        const senha = prompt("Digite a senha do gerente:");
+        if (senha === null) return;
+        if (senha === SENHA_GERENTE) {
+          isAdmin = true;
+          localStorage.setItem(STORAGE_KEY_ADMIN, "1");
+          aplicarModoAdminUI();
+          statusSpan.textContent = "Modo gerente ativado.";
+        } else {
+          alert("Senha incorreta.");
+        }
+      } else {
+        isAdmin = false;
+        localStorage.removeItem(STORAGE_KEY_ADMIN);
+        aplicarModoAdminUI();
+        statusSpan.textContent = "Modo gerente desativado.";
+      }
+      if (campoBusca.value.trim()) {
+        buscarProduto(campoBusca.value);
+      } else if (modoOrcamento) {
+        resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
+      }
+    });
+
+    btnToggleOrcamento.addEventListener("click", () => {
+      modoOrcamento = !modoOrcamento;
+      aplicarModoOrcamentoUI();
+    });
+
+    btnSalvarConfig.addEventListener("click", () => {
+      if (!isAdmin) return;
+      const ipiVal = obterPercentual(ipiInput.value);
+      const freteVal = obterPercentual(freteInput.value);
+      const markupVal = obterPercentual(markupInput.value);
+      const maxDescVal = obterPercentual(maxDescInput.value);
+
+      localStorage.setItem(STORAGE_KEY_IPI, String(ipiVal));
+      localStorage.setItem(STORAGE_KEY_FRETE, String(freteVal));
+      localStorage.setItem(STORAGE_KEY_MARKUP, String(markupVal));
+      localStorage.setItem(STORAGE_KEY_MAX_DESC, String(maxDescVal));
+
+      carregarConfigNosInputs();
+
+      statusSpan.textContent = "Configurações de IPI, frete, markup e desconto máximo salvas.";
+      if (campoBusca.value.trim()) {
+        buscarProduto(campoBusca.value);
+      } else if (modoOrcamento) {
+        resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
+      }
+    });
+
+    // Filtros de categoria
+    btnCatTodos.addEventListener("click", () => {
+      categoriaFiltro = "";
+      aplicarFiltroCategoriaUI();
+      if (campoBusca.value.trim()) buscarProduto(campoBusca.value);
+    });
+    btnCatMesas.addEventListener("click", () => {
+      categoriaFiltro = "MESA";
+      aplicarFiltroCategoriaUI();
+      if (campoBusca.value.trim()) buscarProduto(campoBusca.value);
+    });
+    btnCatCadeiras.addEventListener("click", () => {
+      categoriaFiltro = "CADEIRA";
+      aplicarFiltroCategoriaUI();
+      if (campoBusca.value.trim()) buscarProduto(campoBusca.value);
+    });
+    btnCatPoltronas.addEventListener("click", () => {
+      categoriaFiltro = "POLTRONA";
+      aplicarFiltroCategoriaUI();
+      if (campoBusca.value.trim()) buscarProduto(campoBusca.value);
+    });
+
+    // Delegação de eventos para orçamento
+    resultadoDiv.addEventListener("change", (event) => {
+      const target = event.target;
+      if (!modoOrcamento) return;
+
+      // Checkbox incluir no orçamento
+      if (target.classList.contains("chk-orcamento")) {
+        const id = target.getAttribute("data-id");
+        const p = produtos.find(pp => String(pp._id) === String(id));
+
+        if (target.checked) {
+          const qtdInput = resultadoDiv.querySelector(`.input-qtd-orcamento[data-id="${id}"]`);
+          let qtd = parseInt(qtdInput ? qtdInput.value : "1", 10);
+          if (isNaN(qtd) || qtd < 1) qtd = 1;
+
+          let cfgProd = { maxFaixa: 4, temTela: false, temVerniz: false };
+          if (p) {
+            cfgProd = extrairConfiguracaoDoProduto(p);
+          }
+
+          orcamento[id] = {
+            quantidade: qtd,
+            maxFaixa: cfgProd.maxFaixa,
+            temTela: cfgProd.temTela,
+            temVerniz: cfgProd.temVerniz
+          };
+        } else {
+          delete orcamento[id];
+          if (p && p.codigo) {
+            removerConfiguracaoDoProduto(p.codigo);
+          }
+        }
+
+        if (campoBusca.value.trim()) {
+          buscarProduto(campoBusca.value);
+        } else {
+          resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
+        }
+      }
+
+      // Quantidade
+      if (target.classList.contains("input-qtd-orcamento")) {
+        const id = target.getAttribute("data-id");
+        let qtd = parseInt(target.value, 10);
+        if (isNaN(qtd) || qtd < 1) {
+          qtd = 1;
+          target.value = "1";
+        }
+
+        if (orcamento[id]) {
+          orcamento[id].quantidade = qtd;
+        } else {
+          const p = produtos.find(pp => String(pp._id) === String(id));
+
+          let cfgProd = { maxFaixa: 4, temTela: false, temVerniz: false };
+          if (p) {
+            cfgProd = extrairConfiguracaoDoProduto(p);
+          }
+
+          orcamento[id] = {
+            quantidade: qtd,
+            maxFaixa: cfgProd.maxFaixa,
+            temTela: cfgProd.temTela,
+            temVerniz: cfgProd.temVerniz
+          };
+
+          const chk = resultadoDiv.querySelector(`.chk-orcamento[data-id="${id}"]`);
+          if (chk) chk.checked = true;
+        }
+
+        if (campoBusca.value.trim()) {
+          buscarProduto(campoBusca.value);
+        } else {
+          resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
+        }
+      }
+    });
+
+    resultadoDiv.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!modoOrcamento) return;
+
+      if (target.classList.contains("btn-remover-orcamento")) {
+        const id = target.getAttribute("data-id");
+        delete orcamento[id];
+        const produto = produtos.find(pp => String(pp._id) === String(id));
+        if (produto && produto.codigo) {
+          removerConfiguracaoDoProduto(produto.codigo);
+        }
+
+        if (campoBusca.value.trim()) {
+          buscarProduto(campoBusca.value);
+        } else {
+          resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
+        }
+        return;
+      }
+
+      if (target.id === "btnLimparOrcamento") {
+        orcamento = {};
+        // Limpa também as configurações de tecidos e acabamentos
+        try {
+          sessionStorage.removeItem(STORAGE_KEY_PARTES);
+        } catch (e) {
+          console.error("Erro ao limpar configuração de tecidos/acabamentos:", e);
+        }
+        if (campoBusca.value.trim()) {
+          buscarProduto(campoBusca.value);
+        } else {
+          resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
+        }
+      }
+
+      if (target.id === "btnCopiarOrcamento") {
+        const fatores = calcularFatoresEDesconto();
+        const texto = gerarTextoOrcamento(fatores);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(texto).then(() => {
+            alert("Orçamento copiado para a área de transferência.");
+          }).catch(() => {
+            prompt("Não foi possível copiar automaticamente. Copie manualmente o texto abaixo:", texto);
+          });
+        } else {
+          prompt("Copie o orçamento:", texto);
+        }
+      }
+
+      if (target.id === "btnImprimirOrcamento") {
+        window.print();
+      }
+    });
+
+    // Voz
+    let recognition = null;
+
+    if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SpeechRecognition();
+      recognition.lang = "pt-BR";
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        statusSpan.textContent = "Ouvindo...";
+      };
+
+      recognition.onerror = (event) => {
+        statusSpan.textContent = "Erro de voz: " + event.error;
+      };
+
+      recognition.onresult = (event) => {
+        const texto = event.results[0][0].transcript;
+        campoBusca.value = texto;
+        statusSpan.textContent = "Você disse: \"" + texto + "\"";
+        buscarProduto(texto);
+      };
+
+      btnFalar.addEventListener("click", () => {
+        recognition.start();
+      });
+    } else {
+      statusSpan.textContent = "Reconhecimento de voz não suportado neste navegador.";
+      btnFalar.disabled = true;
+    }
+  </script>
+</body>
+</html>
