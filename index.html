@@ -250,21 +250,6 @@
     .orcamento-valores {
       white-space: nowrap;
       font-weight: 500;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .orcamento-quantidade {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 12px;
-    }
-    .orcamento-quantidade input[type="number"] {
-      width: 64px;
-      min-width: 64px;
-      padding: 4px 6px;
-      border-radius: 6px;
     }
     .orcamento-total {
       margin-top: 8px;
@@ -1248,11 +1233,7 @@ const campoBusca = document.getElementById("campoBusca");
             <span>${p.codigo} – ${desc}</span>
           </div>
           <div class="orcamento-valores">
-            <label class="orcamento-quantidade">
-              Qtd:
-              <input type="number" min="1" value="${qtd}" class="input-qtd-orcamento" data-id="${id}">
-            </label>
-            <span>R$ ${formatarPreco(valores.valorFinal)} x ${qtd} = R$ ${formatarPreco(subtotal)}</span>
+            R$ ${formatarPreco(valores.valorFinal)} x ${qtd} = R$ ${formatarPreco(subtotal)}
           </div>
           <button type="button" class="btn-remover-orcamento" data-id="${id}">🗑️ Remover</button>
         </div>`;
