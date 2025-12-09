@@ -752,6 +752,16 @@ const campoBusca = document.getElementById("campoBusca");
     // expor função para o onclick inline
     window.abrirImagemModal = abrirImagemModal;
 
+    function tentarFallbackImagem(imgEl, codigo) {
+      if (imgEl.dataset.fallbackTentado === "png") {
+        imgEl.style.display = "none";
+        return;
+      }
+
+      imgEl.dataset.fallbackTentado = "png";
+      imgEl.src = `imagens/${codigo}.png`;
+    }
+
     function normalizar(str) {
       return String(str || "")
         .toUpperCase()
@@ -1143,8 +1153,8 @@ const campoBusca = document.getElementById("campoBusca");
         // Coluna da imagem
         html += `<div class="produto-imagem-wrapper">
           <img src="imagens/${p.codigo}.jpg" alt="Imagem ${p.codigo}"
-               onclick="abrirImagemModal('imagens/${p.codigo}.jpg')"
-               onerror="this.style.display='none';" />
+               onclick="abrirImagemModal(this.src)"
+               onerror="tentarFallbackImagem(this, '${p.codigo}')" />
         </div>`;
 
         // Coluna de informações
@@ -1229,7 +1239,7 @@ const campoBusca = document.getElementById("campoBusca");
 
         linhas += `<div class="orcamento-linha">
           <div class="orcamento-desc">
-            <img class="orcamento-thumb" src="imagens/${p.codigo}.jpg" alt="${p.codigo}" onerror="this.style.display='none';" />
+                        <img class="orcamento-thumb" src="imagens/${p.codigo}.jpg" alt="${p.codigo}" onerror="tentarFallbackImagem(this, '${p.codigo}')" />
             <span>${p.codigo} – ${desc}</span>
           </div>
           <div class="orcamento-valores">
