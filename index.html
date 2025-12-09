@@ -318,90 +318,6 @@
       border-color: #111;
     }
 
-        /* Login */
-    .login-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100vh;
-      background: rgba(0, 0, 0, 0.65);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 2000;
-      padding: 1rem;
-      backdrop-filter: blur(2px);
-    }
-
-    .login-card {
-      background: #fff;
-      padding: 1.5rem;
-      border-radius: 12px;
-      max-width: 360px;
-      width: 100%;
-      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
-      border: 1px solid #e5e7eb;
-    }
-
-    .login-card h2 {
-      margin-top: 0;
-      margin-bottom: 0.25rem;
-      font-size: 1.3rem;
-      color: #111827;
-    }
-
-    .login-card p {
-      margin-top: 0;
-      color: #4b5563;
-      font-size: 0.95rem;
-    }
-
-    .login-card label {
-      display: block;
-      margin-top: 0.75rem;
-      font-weight: 600;
-      color: #374151;
-    }
-
-    .login-card input {
-      width: 100%;
-      padding: 0.6rem 0.75rem;
-      margin-top: 0.25rem;
-      border-radius: 8px;
-      border: 1px solid #d1d5db;
-      font-size: 1rem;
-      box-sizing: border-box;
-    }
-
-    .login-error {
-      margin-top: 0.75rem;
-      color: #b91c1c;
-      background: #fee2e2;
-      padding: 0.6rem 0.75rem;
-      border-radius: 8px;
-      font-weight: 600;
-      display: none;
-    }
-
-    .login-card button {
-      margin-top: 1rem;
-      width: 100%;
-      padding: 0.75rem;
-      border: none;
-      border-radius: 10px;
-      background: linear-gradient(90deg, #4f46e5, #06b6d4);
-      color: #fff;
-      font-weight: 700;
-      cursor: pointer;
-      font-size: 1rem;
-      box-shadow: 0 8px 25px rgba(79, 70, 229, 0.35);
-    }
-
-    .login-card button:hover {
-      filter: brightness(1.05);
-    }
-
     /* Modal de imagem ampliada */
     #imageModal {
       position: fixed;
@@ -457,20 +373,6 @@
   </style>
 </head>
 <body>
-    <div id="loginOverlay" class="login-overlay">
-    <form id="loginForm" class="login-card">
-      <h2>Acesso restrito</h2>
-      <p>Informe usuário e senha para continuar.</p>
-      <label>Usuário
-        <input type="text" id="loginUser" autocomplete="username" />
-      </label>
-      <label>Senha
-        <input type="password" id="loginPass" autocomplete="current-password" />
-      </label>
-      <div id="loginError" class="login-error">Usuário ou senha inválidos.</div>
-      <button type="submit">Entrar</button>
-    </form>
-  </div>
   <header>
     <div>
       <h1>Consulta de Preços – Starmobile</h1>
@@ -610,13 +512,6 @@
       // um novo acesso sempre comece com os campos em branco.
       localStorage.removeItem(STORAGE_KEY_PARTES);
     } catch (e) {}
-
-    const jaAutorizado = localStorage.getItem(STORAGE_KEY_LOGIN) === "1";
-    if (!jaAutorizado) {
-      mostrarTelaLogin();
-    } else {
-      esconderTelaLogin();
-    }
 
     function getPartesConfig() {
       try {
@@ -834,21 +729,12 @@ const campoBusca = document.getElementById("campoBusca");
     const orcVendedorInput = document.getElementById("orcVendedor");
     const orcValidadeInput = document.getElementById("orcValidade");
 
-    const loginOverlay = document.getElementById("loginOverlay");
-    const loginForm = document.getElementById("loginForm");
-    const loginUserInput = document.getElementById("loginUser");
-    const loginPassInput = document.getElementById("loginPass");
-    const loginErrorDiv = document.getElementById("loginError");
-
     const STORAGE_KEY_ADMIN = "starmobile_admin";
-    const STORAGE_KEY_LOGIN = "starmobile_auth";
     const STORAGE_KEY_IPI = "starmobile_ipi_percent";
     const STORAGE_KEY_FRETE = "starmobile_frete_percent";
     const STORAGE_KEY_MARKUP = "starmobile_markup_percent";
     const STORAGE_KEY_MAX_DESC = "starmobile_max_desconto_percent";
 
-    const LOGIN_USERNAME = "admin";
-    const LOGIN_PASSWORD = "$tarmobile";
     const SENHA_GERENTE = "STAR2025";
 
     // Modal imagem
@@ -865,20 +751,6 @@ const campoBusca = document.getElementById("campoBusca");
     });
     // expor função para o onclick inline
     window.abrirImagemModal = abrirImagemModal;
-
-    function mostrarTelaLogin() {
-      loginOverlay.style.display = "flex";
-      loginErrorDiv.style.display = "none";
-      setTimeout(() => loginUserInput.focus(), 0);
-    }
-
-    function esconderTelaLogin() {
-      loginOverlay.style.display = "none";
-    }
-
-    function validarCredenciais(usuario, senha) {
-      return usuario === LOGIN_USERNAME && senha === LOGIN_PASSWORD;
-    }
 
     function normalizar(str) {
       return String(str || "")
@@ -1695,26 +1567,6 @@ function gerarTextoOrcamento(fatores) {
       linhas.push(`\nTotal do orçamento: R$ ${formatarPreco(total)}`);
       return linhas.join("\n\n");
     }
-
-    loginForm.addEventListener("submit", (event) => {
-      event.preventDefault();
-      const usuario = loginUserInput.value.trim();
-      const senha = loginPassInput.value;
-
-      if (validarCredenciais(usuario, senha)) {
-        localStorage.setItem(STORAGE_KEY_LOGIN, "1");
-        esconderTelaLogin();
-        statusSpan.textContent = "";
-      } else {
-        loginErrorDiv.style.display = "block";
-      }
-    });
-
-    [loginUserInput, loginPassInput].forEach((input) => {
-      input.addEventListener("input", () => {
-        loginErrorDiv.style.display = "none";
-      });
-    });
 
     btnBuscar.addEventListener("click", () => {
       buscarProduto(campoBusca.value);
