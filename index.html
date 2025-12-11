@@ -58,6 +58,43 @@
       align-items: center;
       margin-bottom: 8px;
     }
+      .card h2 {
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+    .subsection-title {
+      margin: 8px 0 4px;
+      font-size: 14px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 10px;
+    }
+    .stack {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .muted {
+      font-size: 12px;
+      color: #555;
+    }
+    .pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #eef2ff;
+      font-size: 11px;
+      color: #1f2937;
+      border: 1px solid #cdd4ff;
+    }
+    .list-card {
+      border: 1px solid #eee;
+      border-radius: 10px;
+      padding: 8px;
+      background: #fafafa;
+    }  
     .controls-row {
       display: flex;
       flex-wrap: wrap;
@@ -389,6 +426,65 @@
   </header>
 
   <main>
+       <div class="card">
+      <h2>Login e segurança</h2>
+      <div class="grid">
+        <div class="list-card stack">
+          <div class="stack">
+            <label>Usuário</label>
+            <input id="loginUsuario" type="text" placeholder="admin, representante, gerente ou consultor" />
+          </div>
+          <div class="stack">
+            <label>Senha</label>
+            <input id="loginSenha" type="password" placeholder="Digite sua senha" />
+          </div>
+          <div class="controls-buttons">
+            <button id="btnLogin" class="primary">🔑 Entrar</button>
+            <button id="btnLogout" style="display:none;">🚪 Sair</button>
+          </div>
+          <div id="loginStatus" class="muted">Informe as credenciais para acessar o sistema.</div>
+          <div id="permissoesAtivas" class="pill" style="display:none;"></div>
+        </div>
+        <div class="list-card stack">
+          <div class="subsection-title">Orçamentos salvos</div>
+          <div id="orcamentosSalvosLista" class="stack"></div>
+        </div>
+      </div>
+
+      <div id="adminArea" style="display:none; margin-top:12px;">
+        <div class="subsection-title">Administração (Starmobile)</div>
+        <div class="grid">
+          <div class="list-card stack">
+            <strong>Cadastro de representante</strong>
+            <input id="repNome" type="text" placeholder="Nome da Representada" />
+            <input id="repLogin" type="text" placeholder="Nome de Login" />
+            <input id="repSenha" type="password" placeholder="Senha" />
+            <button id="btnCadastrarRep">➕ Cadastrar representante</button>
+          </div>
+          <div class="list-card stack">
+            <strong>Cadastro de loja</strong>
+            <input id="lojaNome" type="text" placeholder="Nome da Loja" />
+            <input id="lojaCidade" type="text" placeholder="Cidade" />
+            <input id="lojaEstado" type="text" placeholder="Estado" />
+            <input id="lojaTelefone" type="text" placeholder="Telefone" />
+            <input id="lojaCnpj" type="text" placeholder="CNPJ" />
+            <label>Vincular a representante</label>
+            <select id="lojaRepresentante"></select>
+            <input id="lojaGerenteNome" type="text" placeholder="Nome de Login do Gerente" />
+            <input id="lojaGerenteSenha" type="password" placeholder="Senha do Gerente" />
+            <div class="muted">Cadastre até 4 consultores</div>
+            <div id="consultoresInputs" class="stack"></div>
+            <button id="btnAdicionarConsultor">➕ Adicionar consultor</button>
+            <button id="btnCadastrarLoja">🏬 Cadastrar loja</button>
+          </div>
+          <div class="list-card stack">
+            <strong>Cadastros atuais</strong>
+            <div id="resumoCadastros" class="muted"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+ 
     <div class="card">
       <div id="adminConfig">
         <div class="controls-row">
@@ -480,6 +576,7 @@
     let modoOrcamento = false;
     // orcamento[id] = { quantidade: number, maxFaixa?: number, temTela?: boolean, temVerniz?: boolean }
     let orcamento = {};
+    let usuarioLogado = null;
     // filtro de categoria: "", "MESA", "CADEIRA", "POLTRONA"
     let categoriaFiltro = "";
 
@@ -506,6 +603,9 @@
     //   ...
     // }
     const STORAGE_KEY_PARTES = "starmobile_partes_tecidos";
+    const STORAGE_KEY_HIERARQUIA = "starmobile_hierarquia_v1";
+    const STORAGE_KEY_SESSAO = "starmobile_sessao_v1";
+    const STORAGE_KEY_ORCAMENTOS_SALVOS = "starmobile_orcamentos_salvos_v1";
 
     try {
       // Zera qualquer configuração antiga persistida em localStorage para que
@@ -720,6 +820,31 @@
     const orcamentoBadge = document.getElementById("orcamentoBadge");
     const orcamentoHeaderDiv = document.getElementById("orcamentoHeader");
 
+        const loginUsuarioInput = document.getElementById("loginUsuario");
+    const loginSenhaInput = document.getElementById("loginSenha");
+    const btnLogin = document.getElementById("btnLogin");
+    const btnLogout = document.getElementById("btnLogout");
+    const loginStatus = document.getElementById("loginStatus");
+    const permissoesAtivas = document.getElementById("permissoesAtivas");
+    const adminArea = document.getElementById("adminArea");
+    const orcamentosSalvosLista = document.getElementById("orcamentosSalvosLista");
+    const resumoCadastrosDiv = document.getElementById("resumoCadastros");
+    const lojaRepresentanteSelect = document.getElementById("lojaRepresentante");
+    const consultoresInputs = document.getElementById("consultoresInputs");
+    const btnAdicionarConsultor = document.getElementById("btnAdicionarConsultor");
+    const btnCadastrarRep = document.getElementById("btnCadastrarRep");
+    const btnCadastrarLoja = document.getElementById("btnCadastrarLoja");
+    const repNomeInput = document.getElementById("repNome");
+    const repLoginInput = document.getElementById("repLogin");
+    const repSenhaInput = document.getElementById("repSenha");
+    const lojaNomeInput = document.getElementById("lojaNome");
+    const lojaCidadeInput = document.getElementById("lojaCidade");
+    const lojaEstadoInput = document.getElementById("lojaEstado");
+    const lojaTelefoneInput = document.getElementById("lojaTelefone");
+    const lojaCnpjInput = document.getElementById("lojaCnpj");
+    const lojaGerenteNomeInput = document.getElementById("lojaGerenteNome");
+    const lojaGerenteSenhaInput = document.getElementById("lojaGerenteSenha");
+
     const btnCatTodos = document.getElementById("btnCatTodos");
     const btnCatMesas = document.getElementById("btnCatMesas");
     const btnCatCadeiras = document.getElementById("btnCatCadeiras");
@@ -737,6 +862,10 @@
     const STORAGE_KEY_MAX_DESC = "starmobile_max_desconto_percent";
 
     const SENHA_GERENTE = "STAR2025";
+    const CREDENCIAIS_ADMIN = { login: "admin", senha: "$tarmobile2025", nome: "Starmobile" };
+
+    let dadosSistema = { representantes: [], lojas: [] };
+    let orcamentosSalvos = [];
 
     // Modal imagem
     const imageModal = document.getElementById("imageModal");
@@ -769,6 +898,45 @@
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .trim();
+    }
+
+        function carregarDadosPersistidos() {
+      try {
+        const bruto = localStorage.getItem(STORAGE_KEY_HIERARQUIA);
+        dadosSistema = bruto ? JSON.parse(bruto) : { representantes: [], lojas: [] };
+        if (!Array.isArray(dadosSistema.representantes)) dadosSistema.representantes = [];
+        if (!Array.isArray(dadosSistema.lojas)) dadosSistema.lojas = [];
+        dadosSistema.lojas = dadosSistema.lojas.map(loja => ({
+          ...loja,
+          consultores: Array.isArray(loja.consultores) ? loja.consultores : [],
+        }));
+      } catch (e) {
+        dadosSistema = { representantes: [], lojas: [] };
+      }
+
+      try {
+        const brutoOrc = localStorage.getItem(STORAGE_KEY_ORCAMENTOS_SALVOS);
+        orcamentosSalvos = brutoOrc ? JSON.parse(brutoOrc) : [];
+      } catch (e) {
+        orcamentosSalvos = [];
+      }
+
+      try {
+        const sessao = localStorage.getItem(STORAGE_KEY_SESSAO);
+        usuarioLogado = sessao ? JSON.parse(sessao) : null;
+      } catch (e) {
+        usuarioLogado = null;
+      }
+    }
+
+    function salvarDadosPersistidos() {
+      localStorage.setItem(STORAGE_KEY_HIERARQUIA, JSON.stringify(dadosSistema));
+      localStorage.setItem(STORAGE_KEY_ORCAMENTOS_SALVOS, JSON.stringify(orcamentosSalvos));
+      if (usuarioLogado) {
+        localStorage.setItem(STORAGE_KEY_SESSAO, JSON.stringify(usuarioLogado));
+      } else {
+        localStorage.removeItem(STORAGE_KEY_SESSAO);
+      }
     }
 
     function formatarPreco(valor) {
@@ -922,6 +1090,149 @@
       }
     }
 
+    function descreverUsuario(usuario) {
+      if (!usuario) return "Nenhum usuário logado.";
+      if (usuario.role === "admin") return `Starmobile (administrador geral)`;
+      if (usuario.role === "representante") return `Representante ${usuario.nome}`;
+      if (usuario.role === "gerente") return `Gerente da loja ${usuario.lojaNome}`;
+      if (usuario.role === "consultor") return `Consultor ${usuario.nome} - loja ${usuario.lojaNome}`;
+      return usuario.nome || usuario.login;
+    }
+
+    function atualizarUIAutenticacao() {
+      const descricao = descreverUsuario(usuarioLogado);
+      loginStatus.textContent = descricao;
+      permissoesAtivas.style.display = usuarioLogado ? "inline-block" : "none";
+      btnLogout.style.display = usuarioLogado ? "inline-flex" : "none";
+      btnLogin.style.display = usuarioLogado ? "none" : "inline-flex";
+
+      let textoPermissoes = "";
+      if (!usuarioLogado) {
+        textoPermissoes = "Sem sessão ativa.";
+      } else if (usuarioLogado.role === "admin") {
+        textoPermissoes = "Admin: acesso a todos os cadastros e orçamentos.";
+      } else if (usuarioLogado.role === "representante") {
+        textoPermissoes = "Representante: acesso às lojas e orçamentos vinculados.";
+      } else if (usuarioLogado.role === "gerente") {
+        textoPermissoes = "Gerente: acesso aos orçamentos da loja e ajuste de IPI/Frete/MKP.";
+      } else if (usuarioLogado.role === "consultor") {
+        textoPermissoes = "Consultor: acesso apenas aos próprios orçamentos.";
+      }
+      permissoesAtivas.textContent = textoPermissoes;
+
+      isAdmin = !!(usuarioLogado && (usuarioLogado.role === "admin" || usuarioLogado.role === "gerente"));
+      aplicarModoAdminUI();
+      if (campoBusca.value.trim()) buscarProduto(campoBusca.value);
+
+      adminArea.style.display = usuarioLogado && usuarioLogado.role === "admin" ? "block" : "none";
+      renderizarOrcamentosSalvos();
+    }
+
+    function atualizarSelectRepresentantes() {
+      if (!lojaRepresentanteSelect) return;
+      lojaRepresentanteSelect.innerHTML = "";
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = "Selecione uma representante...";
+      lojaRepresentanteSelect.appendChild(opt);
+      dadosSistema.representantes.forEach(rep => {
+        const o = document.createElement("option");
+        o.value = rep.id;
+        o.textContent = rep.nome;
+        lojaRepresentanteSelect.appendChild(o);
+      });
+    }
+
+    function renderizarResumoCadastros() {
+      let html = "";
+      if (!dadosSistema.representantes.length) {
+        html += "Nenhuma representante cadastrada.";
+      } else {
+        dadosSistema.representantes.forEach(rep => {
+          const lojas = dadosSistema.lojas.filter(l => l.representanteId === rep.id);
+          html += `<div><strong>${rep.nome}</strong> (${rep.login}) – ${lojas.length} loja(s)</div>`;
+          lojas.forEach(loja => {
+            html += `<div class="muted" style="padding-left:10px;">🏬 ${loja.nome} – gerente: ${loja.gerente.login}, consultores: ${loja.consultores.length}</div>`;
+          });
+        });
+      }
+      resumoCadastrosDiv.innerHTML = html;
+    }
+
+    function adicionarConsultorInput(nome = "", login = "", senha = "") {
+      const atual = consultoresInputs.querySelectorAll(".consultor-row").length;
+      if (atual >= 4) {
+        alert("Cada loja pode cadastrar até 4 consultores.");
+        return;
+      }
+      const wrapper = document.createElement("div");
+      wrapper.className = "grid consultor-row";
+      wrapper.innerHTML = `
+        <input type="text" class="consultor-nome" placeholder="Nome do Consultor" value="${nome}" />
+        <input type="text" class="consultor-login" placeholder="Login do Consultor" value="${login}" />
+        <input type="password" class="consultor-senha" placeholder="Senha" value="${senha}" />
+        <button type="button" class="btn-remover-consultor">❌ Remover</button>
+      `;
+      consultoresInputs.appendChild(wrapper);
+    }
+
+    function coletarConsultoresDoForm() {
+      const rows = Array.from(consultoresInputs.querySelectorAll(".consultor-row"));
+      return rows.map(row => ({
+        nome: row.querySelector(".consultor-nome").value.trim(),
+        login: row.querySelector(".consultor-login").value.trim(),
+        senha: row.querySelector(".consultor-senha").value.trim(),
+      })).filter(c => c.nome && c.login && c.senha).slice(0, 4);
+    }
+
+    function renderizarOrcamentosSalvos() {
+      if (!orcamentosSalvosLista) return;
+      let visiveis = [];
+      if (!usuarioLogado) {
+        orcamentosSalvosLista.innerHTML = "Entre para visualizar orçamentos salvos.";
+        return;
+      }
+
+      visiveis = orcamentosSalvos.filter(orc => {
+        if (usuarioLogado.role === "admin") return true;
+        if (usuarioLogado.role === "representante") {
+          return orc.representanteId && orc.representanteId === usuarioLogado.representanteId;
+        }
+        if (usuarioLogado.role === "gerente") {
+          return orc.lojaId && orc.lojaId === usuarioLogado.lojaId;
+        }
+        if (usuarioLogado.role === "consultor") {
+          return orc.consultorLogin && orc.consultorLogin === usuarioLogado.login;
+        }
+        return false;
+      });
+
+      if (!visiveis.length) {
+        orcamentosSalvosLista.innerHTML = "Nenhum orçamento salvo para este acesso.";
+        return;
+      }
+
+      orcamentosSalvosLista.innerHTML = "";
+      visiveis.forEach(orc => {
+        const div = document.createElement("div");
+        div.className = "list-card";
+        const data = new Date(orc.criadoEm);
+        const lojaInfo = orc.lojaNome ? ` • Loja: ${orc.lojaNome}` : "";
+        div.innerHTML = `
+          <div><strong>${orc.titulo}</strong></div>
+          <div class="muted">${data.toLocaleString()} • Criado por ${orc.criadorNome}${lojaInfo}</div>
+          <div class="muted">Total: R$ ${formatarPreco(orc.total)}</div>
+          <details style="margin-top:4px;"><summary>Ver detalhes</summary><pre style="white-space:pre-wrap; font-size:11px;">${orc.texto}</pre></details>
+        `;
+        orcamentosSalvosLista.appendChild(div);
+      });
+    }
+
+    function limparConsultoresForm() {
+      consultoresInputs.innerHTML = "";
+      adicionarConsultorInput();
+    }
+
     function aplicarFiltroCategoriaUI() {
       const buttons = [btnCatTodos, btnCatMesas, btnCatCadeiras, btnCatPoltronas];
       buttons.forEach(b => b.classList.remove("active"));
@@ -932,6 +1243,7 @@
     }
 
     carregarConfigNosInputs();
+    inicializarSeguranca();
 
     fetch("produtos.json")
       .then(res => {
@@ -1039,10 +1351,13 @@
         console.error("Erro ao carregar verniz.json:", err);
       });
 
-    if (localStorage.getItem(STORAGE_KEY_ADMIN) === "1") {
+    if (!usuarioLogado && localStorage.getItem(STORAGE_KEY_ADMIN) === "1") {
       isAdmin = true;
+            aplicarModoAdminUI();
     }
-    aplicarModoAdminUI();
+    if (usuarioLogado) {
+      aplicarModoAdminUI();
+    }
     aplicarFiltroCategoriaUI();
 
     function buscarProduto(termoBruto) {
@@ -1534,16 +1849,18 @@
         <div class="orcamento-acoes">
           <button type="button" id="btnLimparOrcamento">🧹 Limpar orçamento</button>
           <button type="button" id="btnCopiarOrcamento">📋 Copiar orçamento</button>
+          <button type="button" id="btnSalvarOrcamento">💾 Salvar orçamento</button>
           <button type="button" id="btnImprimirOrcamento">🖨️ Imprimir / PDF</button>
         </div>
         ${linhas}
         <div class="orcamento-total">Total do orçamento: R$ ${formatarPreco(total)}</div>
       </div>`;
     }
-function gerarTextoOrcamento(fatores) {
+
+    function gerarDadosOrcamento(fatores) {
       const ids = Object.keys(orcamento);
       if (ids.length === 0) {
-        return "Orçamento vazio.";
+        return { texto: "Orçamento vazio.", total: 0 };
       }
       let linhas = [];
       let total = 0;
@@ -1575,7 +1892,11 @@ function gerarTextoOrcamento(fatores) {
       });
 
       linhas.push(`\nTotal do orçamento: R$ ${formatarPreco(total)}`);
-      return linhas.join("\n\n");
+      return { texto: linhas.join("\n\n"), total };
+    }
+
+    function gerarTextoOrcamento(fatores) {
+      return gerarDadosOrcamento(fatores).texto;
     }
 
     btnBuscar.addEventListener("click", () => {
@@ -1805,6 +2126,41 @@ function gerarTextoOrcamento(fatores) {
         }
       }
 
+            if (target.id === "btnSalvarOrcamento") {
+        if (!usuarioLogado) {
+          alert("Entre com um usuário válido para salvar o orçamento.");
+          return;
+        }
+        const fatores = calcularFatoresEDesconto();
+        const dados = gerarDadosOrcamento(fatores);
+        if (!dados || dados.total === 0) {
+          alert("Inclua itens no orçamento antes de salvar.");
+          return;
+        }
+
+        const lojaAtual = usuarioLogado.lojaId ? dadosSistema.lojas.find(l => l.id === usuarioLogado.lojaId) : null;
+        const registro = {
+          id: Date.now().toString(),
+          titulo: `Orçamento ${new Date().toLocaleDateString()}`,
+          criadoEm: Date.now(),
+          texto: dados.texto,
+          total: dados.total,
+          criadorNome: usuarioLogado.nome || usuarioLogado.login,
+          login: usuarioLogado.login,
+          role: usuarioLogado.role,
+          representanteId: usuarioLogado.representanteId || (lojaAtual ? lojaAtual.representanteId : null),
+          lojaId: usuarioLogado.lojaId || (lojaAtual ? lojaAtual.id : null),
+          lojaNome: lojaAtual ? lojaAtual.nome : "",
+          consultorLogin: usuarioLogado.role === "consultor" ? usuarioLogado.login : null,
+          gerenteLogin: usuarioLogado.role === "gerente" ? usuarioLogado.login : null,
+        };
+
+        orcamentosSalvos.push(registro);
+        salvarDadosPersistidos();
+        renderizarOrcamentosSalvos();
+        alert("Orçamento salvo com sucesso de acordo com a hierarquia de acesso.");
+      }
+
       if (target.id === "btnImprimirOrcamento") {
         window.print();
       }
@@ -1842,6 +2198,129 @@ function gerarTextoOrcamento(fatores) {
       statusSpan.textContent = "Reconhecimento de voz não suportado neste navegador.";
       btnFalar.disabled = true;
     }
+    
+    function autenticar(login, senha) {
+      if (login === CREDENCIAIS_ADMIN.login && senha === CREDENCIAIS_ADMIN.senha) {
+        return { role: "admin", login, nome: CREDENCIAIS_ADMIN.nome };
+      }
+
+      const representante = dadosSistema.representantes.find(r => r.login === login && r.senha === senha);
+      if (representante) {
+        return { role: "representante", login: representante.login, nome: representante.nome, representanteId: representante.id };
+      }
+
+      for (const loja of dadosSistema.lojas) {
+        if (loja.gerente && loja.gerente.login === login && loja.gerente.senha === senha) {
+          return { role: "gerente", login, nome: loja.gerente.login, lojaId: loja.id, lojaNome: loja.nome, representanteId: loja.representanteId };
+        }
+        const consultor = loja.consultores.find(c => c.login === login && c.senha === senha);
+        if (consultor) {
+          return { role: "consultor", login, nome: consultor.nome, lojaId: loja.id, lojaNome: loja.nome, representanteId: loja.representanteId };
+        }
+      }
+      return null;
+    }
+
+    function inicializarSeguranca() {
+      carregarDadosPersistidos();
+      atualizarSelectRepresentantes();
+      renderizarResumoCadastros();
+      limparConsultoresForm();
+      atualizarUIAutenticacao();
+    }
+
+    btnLogin.addEventListener("click", () => {
+      const login = loginUsuarioInput.value.trim();
+      const senha = loginSenhaInput.value.trim();
+      const autenticado = autenticar(login, senha);
+      if (autenticado) {
+        usuarioLogado = autenticado;
+        salvarDadosPersistidos();
+        atualizarUIAutenticacao();
+        alert("Login realizado com sucesso.");
+      } else {
+        alert("Credenciais inválidas.");
+      }
+    });
+
+    btnLogout.addEventListener("click", () => {
+      usuarioLogado = null;
+      isAdmin = false;
+      localStorage.removeItem(STORAGE_KEY_ADMIN);
+      salvarDadosPersistidos();
+      atualizarUIAutenticacao();
+    });
+
+    btnAdicionarConsultor.addEventListener("click", () => adicionarConsultorInput());
+
+    consultoresInputs.addEventListener("click", (event) => {
+      if (event.target.classList.contains("btn-remover-consultor")) {
+        const row = event.target.closest(".consultor-row");
+        if (row) row.remove();
+      }
+    });
+
+    btnCadastrarRep.addEventListener("click", () => {
+      const nome = repNomeInput.value.trim();
+      const login = repLoginInput.value.trim();
+      const senha = repSenhaInput.value.trim();
+      if (!nome || !login || !senha) {
+        alert("Preencha nome, login e senha da representante.");
+        return;
+      }
+      const id = Date.now().toString();
+      dadosSistema.representantes.push({ id, nome, login, senha });
+      repNomeInput.value = "";
+      repLoginInput.value = "";
+      repSenhaInput.value = "";
+      salvarDadosPersistidos();
+      atualizarSelectRepresentantes();
+      renderizarResumoCadastros();
+      alert("Representante cadastrada com sucesso.");
+    });
+
+    btnCadastrarLoja.addEventListener("click", () => {
+      const nome = lojaNomeInput.value.trim();
+      const cidade = lojaCidadeInput.value.trim();
+      const estado = lojaEstadoInput.value.trim();
+      const telefone = lojaTelefoneInput.value.trim();
+      const cnpj = lojaCnpjInput.value.trim();
+      const representanteId = lojaRepresentanteSelect.value;
+      const gerenteLogin = lojaGerenteNomeInput.value.trim();
+      const gerenteSenha = lojaGerenteSenhaInput.value.trim();
+      const consultores = coletarConsultoresDoForm();
+
+      if (!nome || !cidade || !estado || !telefone || !cnpj || !representanteId || !gerenteLogin || !gerenteSenha) {
+        alert("Preencha todos os campos da loja e vincule a uma representante.");
+        return;
+      }
+
+      const loja = {
+        id: Date.now().toString(),
+        nome,
+        cidade,
+        estado,
+        telefone,
+        cnpj,
+        representanteId,
+        gerente: { login: gerenteLogin, senha: gerenteSenha },
+        consultores: consultores.map(c => ({ ...c })),
+      };
+
+      dadosSistema.lojas.push(loja);
+      salvarDadosPersistidos();
+      renderizarResumoCadastros();
+      limparConsultoresForm();
+      lojaNomeInput.value = "";
+      lojaCidadeInput.value = "";
+      lojaEstadoInput.value = "";
+      lojaTelefoneInput.value = "";
+      lojaCnpjInput.value = "";
+      lojaGerenteNomeInput.value = "";
+      lojaGerenteSenhaInput.value = "";
+      lojaRepresentanteSelect.value = "";
+      alert("Loja cadastrada com sucesso.");
+    });
   </script>
 </body>
 </html>
