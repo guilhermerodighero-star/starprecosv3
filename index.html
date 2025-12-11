@@ -336,6 +336,43 @@
       box-shadow: 0 10px 30px rgba(0,0,0,0.4);
     }
 
+    .hierarquia-grid {
+      display: grid;
+      gap: 8px;
+    }
+
+    .hierarquia-grid .controls-row {
+      align-items: flex-end;
+    }
+
+    .perfil-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #eef2ff;
+      color: #1d2a61;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid #cfd6ff;
+      margin-top: 8px;
+      width: fit-content;
+    }
+
+    .orcamento-salvo {
+      border: 1px solid #e5e7eb;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 8px;
+      background: #fafafa;
+    }
+
+    .orcamento-salvo small {
+      color: #666;
+      display: block;
+      margin-top: 2px;
+    }
+
     @media print {
       header,
       .controls,
@@ -389,6 +426,63 @@
   </header>
 
   <main>
+        <div class="card hierarquia-grid">
+      <div class="controls-row">
+        <label style="flex:1; min-width: 180px;">
+          Novo representante
+          <input type="text" id="nomeRepresentante" placeholder="Nome do representante" />
+        </label>
+        <button id="btnAdicionarRepresentante">➕ Adicionar representante</button>
+      </div>
+
+      <div class="controls-row">
+        <label style="flex:1; min-width: 180px;">
+          Nova loja
+          <input type="text" id="nomeLoja" placeholder="Nome da loja" />
+        </label>
+        <label style="min-width: 200px;">
+          Representante
+          <select id="representanteParaLoja"></select>
+        </label>
+        <label style="flex:1; min-width: 180px;">
+          Gerente da loja
+          <input type="text" id="nomeGerenteLoja" placeholder="Nome do gerente" />
+        </label>
+        <button id="btnAdicionarLoja">🏬 Adicionar loja</button>
+      </div>
+
+      <div class="controls-row">
+        <label style="flex:1; min-width: 180px;">
+          Novo consultor
+          <input type="text" id="nomeConsultor" placeholder="Nome do consultor" />
+        </label>
+        <label style="min-width: 200px;">
+          Loja
+          <select id="lojaParaConsultor"></select>
+        </label>
+        <button id="btnAdicionarConsultor">👥 Adicionar consultor</button>
+      </div>
+
+      <div class="controls-row">
+        <label style="min-width: 240px;">
+          Perfil ativo
+          <select id="perfilAtivo"></select>
+        </label>
+        <label style="min-width: 240px;">
+          Loja para salvar orçamentos
+          <select id="destinoOrcamento"></select>
+        </label>
+      </div>
+
+      <div id="hierarquiaResumo" class="preco-sec"></div>
+      <div id="perfilBadge" class="perfil-badge" style="display:none;"></div>
+    </div>
+
+    <div class="card" id="orcamentosSalvosCard">
+      <h3>Orçamentos salvos</h3>
+      <div id="orcamentosSalvosLista" class="preco-sec">Nenhum orçamento salvo ainda.</div>
+    </div>
+
     <div class="card">
       <div id="adminConfig">
         <div class="controls-row">
@@ -474,6 +568,7 @@
   </div>
 
   <script>
+    const PERFIL_PADRAO = { tipo: "starmobile", nome: "Starmobile" };
     let produtos = [];
     let frasesUnicas = [];
     let isAdmin = false;
@@ -482,6 +577,9 @@
     let orcamento = {};
     // filtro de categoria: "", "MESA", "CADEIRA", "POLTRONA"
     let categoriaFiltro = "";
+    let hierarquiaDados = { representantes: [] };
+    let perfilAtivo = PERFIL_PADRAO;
+    let orcamentosSalvos = {};
 
     // Tecidos por faixa (carregados de tecidos.json)
     let tecidosPorFaixa = {};
@@ -720,6 +818,21 @@
     const orcamentoBadge = document.getElementById("orcamentoBadge");
     const orcamentoHeaderDiv = document.getElementById("orcamentoHeader");
 
+    const nomeRepresentanteInput = document.getElementById("nomeRepresentante");
+    const nomeLojaInput = document.getElementById("nomeLoja");
+    const nomeGerenteLojaInput = document.getElementById("nomeGerenteLoja");
+    const nomeConsultorInput = document.getElementById("nomeConsultor");
+    const representanteParaLojaSelect = document.getElementById("representanteParaLoja");
+    const lojaParaConsultorSelect = document.getElementById("lojaParaConsultor");
+    const perfilAtivoSelect = document.getElementById("perfilAtivo");
+    const destinoOrcamentoSelect = document.getElementById("destinoOrcamento");
+    const hierarquiaResumoDiv = document.getElementById("hierarquiaResumo");
+    const perfilBadge = document.getElementById("perfilBadge");
+    const orcamentosSalvosLista = document.getElementById("orcamentosSalvosLista");
+    const btnAdicionarRepresentante = document.getElementById("btnAdicionarRepresentante");
+    const btnAdicionarLoja = document.getElementById("btnAdicionarLoja");
+    const btnAdicionarConsultor = document.getElementById("btnAdicionarConsultor");
+
     const btnCatTodos = document.getElementById("btnCatTodos");
     const btnCatMesas = document.getElementById("btnCatMesas");
     const btnCatCadeiras = document.getElementById("btnCatCadeiras");
@@ -735,6 +848,9 @@
     const STORAGE_KEY_FRETE = "starmobile_frete_percent";
     const STORAGE_KEY_MARKUP = "starmobile_markup_percent";
     const STORAGE_KEY_MAX_DESC = "starmobile_max_desconto_percent";
+    const STORAGE_KEY_HIERARQUIA = "starmobile_hierarquia_cadastros";
+    const STORAGE_KEY_PERFIL_ATIVO = "starmobile_perfil_ativo";
+    const STORAGE_KEY_ORCAMENTOS_SALVOS = "starmobile_orcamentos_salvos";
 
     const SENHA_GERENTE = "STAR2025";
 
@@ -761,6 +877,79 @@
 
       imgEl.dataset.fallbackTentado = "png";
       imgEl.src = `imagens/${codigo}.png`;
+    }
+
+        function carregarHierarquia() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_HIERARQUIA);
+        if (!raw) {
+          return { representantes: [] };
+        }
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === "object" ? parsed : { representantes: [] };
+      } catch (e) {
+        return { representantes: [] };
+      }
+    }
+
+    function salvarHierarquia(data) {
+      try {
+        localStorage.setItem(STORAGE_KEY_HIERARQUIA, JSON.stringify(data || { representantes: [] }));
+      } catch (e) {
+        console.error("Erro ao salvar hierarquia:", e);
+      }
+    }
+
+    function carregarPerfilAtivo() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_PERFIL_ATIVO);
+        if (!raw) return PERFIL_PADRAO;
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.tipo) return parsed;
+        return PERFIL_PADRAO;
+      } catch (e) {
+        return PERFIL_PADRAO;
+      }
+    }
+
+    function salvarPerfilAtivo(perfil) {
+      try {
+        localStorage.setItem(STORAGE_KEY_PERFIL_ATIVO, JSON.stringify(perfil || PERFIL_PADRAO));
+      } catch (e) {
+        console.error("Erro ao salvar perfil ativo:", e);
+      }
+    }
+
+    function carregarOrcamentosSalvos() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_ORCAMENTOS_SALVOS);
+        const parsed = raw ? JSON.parse(raw) : {};
+        return parsed && typeof parsed === "object" ? parsed : {};
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function salvarOrcamentosSalvos(data) {
+      try {
+        localStorage.setItem(STORAGE_KEY_ORCAMENTOS_SALVOS, JSON.stringify(data || {}));
+      } catch (e) {
+        console.error("Erro ao salvar orçamentos:", e);
+      }
+    }
+
+    function gerarId(prefixo) {
+      return `${prefixo}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    }
+
+    function descreverPerfil(perfil) {
+      if (!perfil) return "";
+      if (perfil.tipo === "starmobile") return "Starmobile (Administrador geral)";
+      if (perfil.tipo === "representante") return `Representante • ${perfil.nome}`;
+      if (perfil.tipo === "loja") return `Loja • ${perfil.nome}`;
+      if (perfil.tipo === "gerente") return `Gerente • ${perfil.nome}`;
+      if (perfil.tipo === "consultor") return `Consultor • ${perfil.nome}`;
+      return perfil.nome || "Perfil";
     }
 
     function normalizar(str) {
@@ -855,6 +1044,262 @@
       return { ipi, frete, markup, maxDesc };
     }
 
+    function atualizarPerfilBadge() {
+      const texto = descreverPerfil(perfilAtivo);
+      if (!texto) {
+        perfilBadge.style.display = "none";
+        return;
+      }
+      perfilBadge.textContent = texto;
+      perfilBadge.style.display = "inline-flex";
+    }
+
+    function listarLojas() {
+      const lojas = [];
+      (hierarquiaDados.representantes || []).forEach(rep => {
+        (rep.lojas || []).forEach(loja => lojas.push({ ...loja, representanteId: rep.id, representanteNome: rep.nome }));
+      });
+      return lojas;
+    }
+
+    function encontrarLoja(lojaId) {
+      let encontrada = null;
+      (hierarquiaDados.representantes || []).forEach(rep => {
+        (rep.lojas || []).forEach(loja => {
+          if (loja.id === lojaId) {
+            encontrada = { loja, representante: rep };
+          }
+        });
+      });
+      return encontrada;
+    }
+
+    function lojasVisiveisParaPerfil(perfil) {
+      if (!perfil || perfil.tipo === "starmobile") {
+        return listarLojas();
+      }
+      if (perfil.tipo === "representante") {
+        const rep = (hierarquiaDados.representantes || []).find(r => r.id === perfil.id);
+        if (!rep) return [];
+        return (rep.lojas || []).map(loja => ({ ...loja, representanteId: rep.id, representanteNome: rep.nome }));
+      }
+      if (perfil.tipo === "loja" || perfil.tipo === "gerente" || perfil.tipo === "consultor") {
+        const encontrada = encontrarLoja(perfil.lojaId);
+        if (!encontrada) return [];
+        const { loja, representante } = encontrada;
+        return [{ ...loja, representanteId: representante.id, representanteNome: representante.nome }];
+      }
+      return [];
+    }
+
+    function atualizarResumoHierarquia() {
+      if (!hierarquiaDados.representantes.length) {
+        hierarquiaResumoDiv.textContent = "Nenhum cadastro feito ainda.";
+        return;
+      }
+
+      let html = "<strong>Hierarquia atual:</strong><br>";
+      hierarquiaDados.representantes.forEach(rep => {
+        html += `• Representante ${rep.nome}<br>`;
+        (rep.lojas || []).forEach(loja => {
+          html += `&nbsp;&nbsp;◦ Loja ${loja.nome}`;
+          if (loja.gerente) {
+            html += ` — Gerente: ${loja.gerente}`;
+          }
+          html += "<br>";
+          (loja.consultores || []).forEach(cons => {
+            html += `&nbsp;&nbsp;&nbsp;&nbsp;▪ Consultor: ${cons.nome}<br>`;
+          });
+        });
+      });
+      hierarquiaResumoDiv.innerHTML = html;
+    }
+
+    function popularSelectsHierarquia() {
+      const reps = hierarquiaDados.representantes || [];
+      representanteParaLojaSelect.innerHTML = reps.length
+        ? reps.map(r => `<option value="${r.id}">${r.nome}</option>`).join("")
+        : '<option value="">Cadastre um representante</option>';
+
+      const lojas = listarLojas();
+      lojaParaConsultorSelect.innerHTML = lojas.length
+        ? lojas.map(l => `<option value="${l.id}">${l.nome} – ${l.representanteNome}</option>`).join("")
+        : '<option value="">Cadastre uma loja</option>';
+
+      let perfilOptions = [`<option value="starmobile">Starmobile (Administrador geral)</option>`];
+      reps.forEach(rep => {
+        perfilOptions.push(`<option value="rep:${rep.id}">Representante • ${rep.nome}</option>`);
+        (rep.lojas || []).forEach(loja => {
+          perfilOptions.push(`<option value="loja:${loja.id}">Loja • ${loja.nome}</option>`);
+          if (loja.gerente) {
+            perfilOptions.push(`<option value="gerente:${loja.id}">Gerente • ${loja.gerente} (${loja.nome})</option>`);
+          }
+          (loja.consultores || []).forEach(cons => {
+            perfilOptions.push(`<option value="consultor:${loja.id}:${cons.id}">Consultor • ${cons.nome} (${loja.nome})</option>`);
+          });
+        });
+      });
+      perfilAtivoSelect.innerHTML = perfilOptions.join("");
+
+      atualizarDestinoOrcamentoOptions();
+      selecionarPerfilAtivoNoSelect();
+    }
+
+    function selecionarPerfilAtivoNoSelect() {
+      let valor = "starmobile";
+      if (perfilAtivo.tipo === "representante") valor = `rep:${perfilAtivo.id}`;
+      else if (perfilAtivo.tipo === "loja") valor = `loja:${perfilAtivo.lojaId}`;
+      else if (perfilAtivo.tipo === "gerente") valor = `gerente:${perfilAtivo.lojaId}`;
+      else if (perfilAtivo.tipo === "consultor") valor = `consultor:${perfilAtivo.lojaId}:${perfilAtivo.id}`;
+      perfilAtivoSelect.value = valor;
+    }
+
+    function atualizarDestinoOrcamentoOptions() {
+      const lojas = lojasVisiveisParaPerfil(perfilAtivo);
+      destinoOrcamentoSelect.innerHTML = lojas.length
+        ? lojas.map(l => `<option value="${l.id}">${l.nome} – ${l.representanteNome}</option>`).join("")
+        : '<option value="">Nenhuma loja disponível</option>';
+
+      if (perfilAtivo.tipo === "loja" || perfilAtivo.tipo === "gerente" || perfilAtivo.tipo === "consultor") {
+        destinoOrcamentoSelect.value = perfilAtivo.lojaId;
+        destinoOrcamentoSelect.disabled = true;
+      } else {
+        destinoOrcamentoSelect.disabled = false;
+      }
+    }
+
+    function atualizarListaOrcamentosSalvos() {
+      const lojasPermitidas = lojasVisiveisParaPerfil(perfilAtivo).map(l => l.id);
+      const todos = orcamentosSalvos || {};
+      const blocos = [];
+
+      Object.keys(todos).forEach(lojaId => {
+        if (!lojasPermitidas.includes(lojaId)) return;
+        const lista = todos[lojaId] || [];
+        if (!lista.length) return;
+        const lojaInfo = encontrarLoja(lojaId);
+        const tituloLoja = lojaInfo ? `${lojaInfo.loja.nome} (${lojaInfo.representante.nome})` : lojaId;
+        blocos.push(`<div><strong>${tituloLoja}</strong></div>`);
+        lista.forEach(item => {
+          blocos.push(`<div class="orcamento-salvo">
+            <div><strong>${item.cliente || "Orçamento sem nome"}</strong> — Total R$ ${formatarPreco(item.total || 0)}</div>
+            <small>Salvo em ${new Date(item.criadoEm).toLocaleString()} por ${descreverPerfil(item.autor)}</small>
+          </div>`);
+        });
+      });
+
+      orcamentosSalvosLista.innerHTML = blocos.length ? blocos.join("") : "Nenhum orçamento salvo para este perfil.";
+    }
+
+    function adicionarRepresentante(nome) {
+      const nomeLimpo = nome.trim();
+      if (!nomeLimpo) {
+        alert("Informe o nome do representante.");
+        return;
+      }
+      hierarquiaDados.representantes.push({ id: gerarId("rep"), nome: nomeLimpo, lojas: [] });
+      salvarHierarquia(hierarquiaDados);
+      popularSelectsHierarquia();
+      atualizarResumoHierarquia();
+    }
+
+    function adicionarLoja(nome, representanteId, gerente) {
+      const nomeLimpo = nome.trim();
+      if (!nomeLimpo || !representanteId) {
+        alert("Informe o nome da loja e selecione um representante.");
+        return;
+      }
+      const rep = (hierarquiaDados.representantes || []).find(r => r.id === representanteId);
+      if (!rep) {
+        alert("Representante não encontrado.");
+        return;
+      }
+      if (!rep.lojas) rep.lojas = [];
+      rep.lojas.push({ id: gerarId("loja"), nome: nomeLimpo, gerente: gerente.trim() || "", consultores: [] });
+      salvarHierarquia(hierarquiaDados);
+      popularSelectsHierarquia();
+      atualizarResumoHierarquia();
+    }
+
+    function adicionarConsultor(nome, lojaId) {
+      const nomeLimpo = nome.trim();
+      if (!nomeLimpo || !lojaId) {
+        alert("Informe o nome do consultor e selecione a loja.");
+        return;
+      }
+      const encontrada = encontrarLoja(lojaId);
+      if (!encontrada) {
+        alert("Loja não encontrada.");
+        return;
+      }
+      if (!encontrada.loja.consultores) encontrada.loja.consultores = [];
+      encontrada.loja.consultores.push({ id: gerarId("cons"), nome: nomeLimpo });
+      salvarHierarquia(hierarquiaDados);
+      popularSelectsHierarquia();
+      atualizarResumoHierarquia();
+    }
+
+    function atualizarEstadoHierarquia() {
+      hierarquiaDados = carregarHierarquia();
+      perfilAtivo = carregarPerfilAtivo();
+      orcamentosSalvos = carregarOrcamentosSalvos();
+      popularSelectsHierarquia();
+      atualizarResumoHierarquia();
+      atualizarPerfilBadge();
+      atualizarListaOrcamentosSalvos();
+    }
+
+    function definirPerfilAtivoPeloValor(valor) {
+      if (valor === "starmobile") {
+        perfilAtivo = PERFIL_PADRAO;
+        salvarPerfilAtivo(perfilAtivo);
+        atualizarPerfilBadge();
+        atualizarDestinoOrcamentoOptions();
+        atualizarListaOrcamentosSalvos();
+        return;
+      }
+
+      if (valor.startsWith("rep:")) {
+        const id = valor.split(":")[1];
+        const rep = (hierarquiaDados.representantes || []).find(r => r.id === id);
+        if (rep) {
+          perfilAtivo = { tipo: "representante", id: rep.id, nome: rep.nome };
+        }
+      }
+
+      if (valor.startsWith("loja:")) {
+        const id = valor.split(":")[1];
+        const info = encontrarLoja(id);
+        if (info) {
+          perfilAtivo = { tipo: "loja", lojaId: info.loja.id, nome: info.loja.nome, representanteId: info.representante.id };
+        }
+      }
+
+      if (valor.startsWith("gerente:")) {
+        const id = valor.split(":")[1];
+        const info = encontrarLoja(id);
+        if (info) {
+          perfilAtivo = { tipo: "gerente", lojaId: info.loja.id, nome: info.loja.gerente || "Gerente", representanteId: info.representante.id };
+        }
+      }
+
+      if (valor.startsWith("consultor:")) {
+        const partes = valor.split(":");
+        const lojaId = partes[1];
+        const consId = partes[2];
+        const info = encontrarLoja(lojaId);
+        const cons = info && (info.loja.consultores || []).find(c => c.id === consId);
+        if (info && cons) {
+          perfilAtivo = { tipo: "consultor", lojaId, id: cons.id, nome: cons.nome, representanteId: info.representante.id };
+        }
+      }
+
+      salvarPerfilAtivo(perfilAtivo);
+      atualizarPerfilBadge();
+      atualizarDestinoOrcamentoOptions();
+      atualizarListaOrcamentosSalvos();
+    }
+
     function calcularFatoresEDesconto() {
       const { ipi, frete, markup, maxDesc } = obterConfigAtual();
       const fatorIPI = 1 + (ipi / 100);
@@ -931,6 +1376,7 @@
       else if (categoriaFiltro === "POLTRONA") btnCatPoltronas.classList.add("active");
     }
 
+    atualizarEstadoHierarquia();
     carregarConfigNosInputs();
 
     fetch("produtos.json")
@@ -1534,13 +1980,40 @@
         <div class="orcamento-acoes">
           <button type="button" id="btnLimparOrcamento">🧹 Limpar orçamento</button>
           <button type="button" id="btnCopiarOrcamento">📋 Copiar orçamento</button>
+          <button type="button" id="btnSalvarOrcamento">💾 Salvar orçamento</button>
           <button type="button" id="btnImprimirOrcamento">🖨️ Imprimir / PDF</button>
         </div>
         ${linhas}
         <div class="orcamento-total">Total do orçamento: R$ ${formatarPreco(total)}</div>
       </div>`;
     }
-function gerarTextoOrcamento(fatores) {
+
+    function extrairItensDoOrcamento(fatores) {
+      const ids = Object.keys(orcamento);
+      const itens = [];
+      let total = 0;
+
+      ids.forEach(id => {
+        const item = orcamento[id];
+        const p = produtos.find(pp => String(pp._id) === String(id));
+        if (!p || p.preco_lista == null) return;
+        const valores = calcularValoresProduto(p, fatores);
+        const qtd = item.quantidade || 1;
+        const subtotal = valores.valorFinal * qtd;
+        total += subtotal;
+        itens.push({
+          produtoCodigo: p.codigo,
+          descricao: p.chaves || "",
+          quantidade: qtd,
+          valorUnitario: valores.valorFinal,
+          subtotal
+        });
+      });
+
+      return { itens, total };
+    }
+
+    function gerarTextoOrcamento(fatores) {
       const ids = Object.keys(orcamento);
       if (ids.length === 0) {
         return "Orçamento vazio.";
@@ -1578,6 +2051,46 @@ function gerarTextoOrcamento(fatores) {
       return linhas.join("\n\n");
     }
 
+        function salvarOrcamentoAtual() {
+      if (!modoOrcamento) {
+        alert("Ative o modo orçamento para salvar.");
+        return;
+      }
+      const ids = Object.keys(orcamento);
+      if (!ids.length) {
+        alert("Inclua itens no orçamento antes de salvar.");
+        return;
+      }
+
+      const lojaDestino = destinoOrcamentoSelect.value;
+      if (!lojaDestino) {
+        alert("Selecione a loja para a qual o orçamento deve ser salvo.");
+        return;
+      }
+
+      const fatores = calcularFatoresEDesconto();
+      const resumo = extrairItensDoOrcamento(fatores);
+
+      const registro = {
+        id: gerarId("orc"),
+        lojaId: lojaDestino,
+        cliente: orcClienteInput.value.trim(),
+        telefone: orcTelefoneInput.value.trim(),
+        vendedor: orcVendedorInput.value.trim(),
+        validade: orcValidadeInput.value.trim(),
+        itens: resumo.itens,
+        total: resumo.total,
+        autor: perfilAtivo,
+        criadoEm: new Date().toISOString()
+      };
+
+      if (!orcamentosSalvos[lojaDestino]) orcamentosSalvos[lojaDestino] = [];
+      orcamentosSalvos[lojaDestino].push(registro);
+      salvarOrcamentosSalvos(orcamentosSalvos);
+      atualizarListaOrcamentosSalvos();
+      alert("Orçamento salvo com sucesso na loja selecionada.");
+    }
+
     btnBuscar.addEventListener("click", () => {
       buscarProduto(campoBusca.value);
     });
@@ -1586,6 +2099,26 @@ function gerarTextoOrcamento(fatores) {
       if (e.key === "Enter") {
         buscarProduto(campoBusca.value);
       }
+    });
+
+        btnAdicionarRepresentante.addEventListener("click", () => {
+      adicionarRepresentante(nomeRepresentanteInput.value);
+      nomeRepresentanteInput.value = "";
+    });
+
+    btnAdicionarLoja.addEventListener("click", () => {
+      adicionarLoja(nomeLojaInput.value, representanteParaLojaSelect.value, nomeGerenteLojaInput.value);
+      nomeLojaInput.value = "";
+      nomeGerenteLojaInput.value = "";
+    });
+
+    btnAdicionarConsultor.addEventListener("click", () => {
+      adicionarConsultor(nomeConsultorInput.value, lojaParaConsultorSelect.value);
+      nomeConsultorInput.value = "";
+    });
+
+    perfilAtivoSelect.addEventListener("change", () => {
+      definirPerfilAtivoPeloValor(perfilAtivoSelect.value);
     });
 
     // Botão LIMPAR busca
@@ -1803,6 +2336,10 @@ function gerarTextoOrcamento(fatores) {
         } else {
           prompt("Copie o orçamento:", texto);
         }
+      }
+
+    if (target.id === "btnSalvarOrcamento") {
+        salvarOrcamentoAtual();
       }
 
       if (target.id === "btnImprimirOrcamento") {
