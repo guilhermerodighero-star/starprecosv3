@@ -377,7 +377,7 @@
     <div>
       <h1>Consulta de Preços – Starmobile</h1>
       <div class="tagline">
-        Uso interno: pesquisa por código, nome e palavras-chave, com cálculo automático de IPI, frete, markup, desconto autorizado, modo orçamento e imagens dos produtos.
+        Uso interno: Pesquisa por código, nome e palavras-chave.
       </div>
     </div>
     <div class="header-actions">
@@ -633,7 +633,7 @@
       savePartesConfig(cfg);
     }
 
-        function onCorVidroLaminaChange(codigo, valor) {
+    function onCorVidroLaminaChange(codigo, valor) {
       const cfg = getPartesConfig();
       if (!cfg[codigo]) cfg[codigo] = {};
       if (!cfg[codigo].corVidroLamina) cfg[codigo].corVidroLamina = {};
@@ -656,7 +656,7 @@
       cfg[codigo][campo].naoSeAplica = !!checked;
       
       if (checked) {
-             if (campo === "detalhe" || campo === "acabamentoBase") {
+        if (campo === "detalhe" || campo === "acabamentoBase") {
           cfg[codigo][campo].faixa = "";
           cfg[codigo][campo].tecido = "";
         } else {
@@ -697,7 +697,8 @@
         });
       }
     }
-const campoBusca = document.getElementById("campoBusca");
+
+    const campoBusca = document.getElementById("campoBusca");
     const statusSpan = document.getElementById("status");
     const resultadoDiv = document.getElementById("resultado");
     const btnFalar = document.getElementById("btnFalar");
