@@ -1031,18 +1031,16 @@
       const texto = normalizar(descricao || codigo || "");
       const palavras = texto.split(/\s+/).filter(Boolean);
       if (!palavras.length) return normalizar(codigo || "OUTRO");
-      return palavras.slice(0, 2).join(" ");
+      if (palavras.length >= 2) return palavras[1];
+      return palavras[0];
     }
 
     function labelAgrupamentoBusca(descricao = "", codigo = "") {
       const texto = (descricao || codigo || "").trim();
       if (!texto) return codigo || "Sem descrição";
-      return texto
-        .split(/\s+/)
-        .filter(Boolean)
-        .slice(0, 2)
-        .join(" ")
-        .toUpperCase();
+      const palavras = texto.split(/\s+/).filter(Boolean);
+      const label = palavras.length >= 2 ? palavras[1] : palavras[0];
+      return label.toUpperCase();
     }
 
         function carregarDadosPersistidos() {
