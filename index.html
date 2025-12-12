@@ -594,8 +594,14 @@
             <strong>Produtos mais buscados</strong>
             <div class="muted">Disponível apenas para administradores. Consolidado de todas as pesquisas.</div>
             <div id="dashboardBuscasResumo" class="buscas-resumo" style="display:none;"></div>
+            <div class="muted">O histórico fica salvo no próprio site e pode ser exportado/importado para acessar em qualquer computador.</div>
             <div id="dashboardBuscas" class="dashboard-buscas"></div>
             <div id="dashboardBuscasGrafico" class="buscas-chart"></div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button id="btnExportarBuscas" type="button">💾 Exportar histórico</button>
+              <button id="btnImportarBuscas" type="button">📂 Importar histórico</button>
+              <input id="inputImportarBuscas" type="file" accept="application/json" style="display:none;" />
+            </div>
             <button id="btnLimparBuscas" type="button">🧹 Limpar histórico de buscas</button>
           </div>
         </div>
@@ -951,6 +957,9 @@
     const dashboardBuscasCard = document.getElementById("dashboardBuscasCard");
     const dashboardBuscasResumo = document.getElementById("dashboardBuscasResumo");
     const dashboardBuscasGrafico = document.getElementById("dashboardBuscasGrafico");
+    const btnExportarBuscas = document.getElementById("btnExportarBuscas");
+    const btnImportarBuscas = document.getElementById("btnImportarBuscas");
+    const inputImportarBuscas = document.getElementById("inputImportarBuscas");
     const btnLimparBuscas = document.getElementById("btnLimparBuscas");
     const lojaRepresentanteSelect = document.getElementById("lojaRepresentante");
     const consultoresInputs = document.getElementById("consultoresInputs");
@@ -1336,6 +1345,37 @@
         localStorage.setItem(STORAGE_KEY_BUSCAS, JSON.stringify(estatisticasBusca));
       } catch (e) {
         console.error("Erro ao salvar estatísticas de busca:", e);
+      }
+    }
+
+        function exportarEstatisticasBusca() {
+      try {
+        const blob = new Blob([JSON.stringify(estatisticasBusca || {}, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "starmobile-buscas.json";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } catch (e) {
+        console.error("Erro ao exportar estatísticas de busca:", e);
+        alert("Não foi possível exportar o histórico de buscas.");
+      }
+    }
+
+    function importarEstatisticasBusca(conteudo) {
+      try {
+        const dados = JSON.parse(conteudo || "{}") || {};
+        if (typeof dados !== "object") throw new Error("Formato inválido");
+        estatisticasBusca = dados;
+        salvarEstatisticasBusca();
+        renderizarDashboardBuscas();
+        alert("Histórico de buscas importado com sucesso.");
+      } catch (e) {
+        console.error("Erro ao importar estatísticas de busca:", e);
+        alert("Não foi possível importar o arquivo informado.");
       }
     }
 
@@ -2669,6 +2709,23 @@
       estatisticasBusca = {};
       salvarEstatisticasBusca();
       renderizarDashboardBuscas();
+    });
+
+        btnExportarBuscas.addEventListener("click", () => exportarEstatisticasBusca());
+
+    btnImportarBuscas.addEventListener("click", () => {
+      inputImportarBuscas?.click();
+    });
+
+    inputImportarBuscas.addEventListener("change", (event) => {
+      const [arquivo] = event.target.files || [];
+      if (!arquivo) return;
+      const leitor = new FileReader();
+      leitor.onload = (ev) => {
+        importarEstatisticasBusca(ev.target.result);
+        inputImportarBuscas.value = "";
+      };
+      leitor.readAsText(arquivo);
     });
 
     btnCadastrarRep.addEventListener("click", () => {
