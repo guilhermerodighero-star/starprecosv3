@@ -993,7 +993,6 @@
     let orcamentosSalvos = [];
     let lojaEmEdicaoId = null;
     let estatisticasBusca = {};
-    let ultimaBuscaRegistrada = "";
 
     // Modal imagem
     const imageModal = document.getElementById("imageModal");
@@ -1334,20 +1333,13 @@
       }
     }
 
-    function registrarBusca(produtosEncontrados) {
-      if (!Array.isArray(produtosEncontrados) || produtosEncontrados.length === 0) return;
-      const idsUnicos = new Set();
-      produtosEncontrados.forEach(p => {
-        if (!p || p._id == null) return;
-        const id = String(p._id);
-        if (idsUnicos.has(id)) return;
-        idsUnicos.add(id);
-
-        if (!estatisticasBusca[id]) {
-          estatisticasBusca[id] = { codigo: p.codigo, descricao: p.chaves || "", count: 0 };
-        }
-        estatisticasBusca[id].count += 1;
-      });
+    function registrarCliqueBusca(produto) {
+      if (!produto || produto._id == null) return;
+      const id = String(produto._id);
+      if (!estatisticasBusca[id]) {
+        estatisticasBusca[id] = { codigo: produto.codigo, descricao: produto.chaves || "", count: 0 };
+      }
+      estatisticasBusca[id].count += 1;
       salvarEstatisticasBusca();
       renderizarDashboardBuscas();
     }
@@ -1821,11 +1813,6 @@
         statusSpan.textContent = matches.length + " produtos encontrados";
       }
 
-     if (termoNorm !== ultimaBuscaRegistrada) {
-        registrarBusca(matches);
-        ultimaBuscaRegistrada = termoNorm;
-      }
-
       const fatores = calcularFatoresEDesconto();
 
       let html = "";
@@ -1837,7 +1824,7 @@
         const valores = calcularValoresProduto(p, fatores);
         const id = p._id;
 
-        html += `<div class="item">`;
+        html += `<div class="item" data-id="${id}" data-codigo="${p.codigo}" data-descricao="${(p.chaves || "").replace(/"/g, '&quot;')}">`;
 
         // Coluna da imagem
         html += `<div class="produto-imagem-wrapper">
@@ -2373,6 +2360,18 @@
     });
 
     // Delegação de eventos para orçamento
+        resultadoDiv.addEventListener("click", (event) => {
+      const item = event.target.closest(".item");
+      if (!item) return;
+      if (event.target.closest("input, select, button, textarea, label")) return;
+
+      const produtoId = item.getAttribute("data-id");
+      const produto = produtos.find(pp => String(pp._id) === String(produtoId));
+      if (produto) {
+        registrarCliqueBusca(produto);
+      }
+    });
+
     resultadoDiv.addEventListener("change", (event) => {
       const target = event.target;
       if (!modoOrcamento) return;
