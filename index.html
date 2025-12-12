@@ -1028,6 +1028,24 @@
         .trim();
     }
 
+        function chaveAgrupamentoBusca(descricao = "", codigo = "") {
+      const texto = normalizar(descricao || codigo || "");
+      const palavras = texto.split(/\s+/).filter(Boolean);
+      if (!palavras.length) return normalizar(codigo || "OUTRO");
+      return palavras.slice(0, 2).join(" ");
+    }
+
+    function labelAgrupamentoBusca(descricao = "", codigo = "") {
+      const texto = (descricao || codigo || "").trim();
+      if (!texto) return codigo || "Sem descrição";
+      return texto
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .join(" ")
+        .toUpperCase();
+    }
+
         function carregarDadosPersistidos() {
       try {
         const bruto = localStorage.getItem(STORAGE_KEY_HIERARQUIA);
@@ -1340,7 +1358,25 @@
       dashboardBuscasCard.style.display = adminAtivo ? "block" : "none";
       if (!adminAtivo) return;
 
-      const itensOrdenados = Object.values(estatisticasBusca || {}).sort((a, b) => b.count - a.count);
+      const itensBrutos = Object.values(estatisticasBusca || {});
+      const agrupados = {};
+
+      itensBrutos.forEach((item) => {
+        const chave = chaveAgrupamentoBusca(item.descricao, item.codigo);
+        if (!agrupados[chave]) {
+          agrupados[chave] = {
+            label: labelAgrupamentoBusca(item.descricao, item.codigo),
+            count: 0,
+            exemplos: new Set(),
+          };
+        }
+        agrupados[chave].count += item.count || 0;
+        if (item.codigo) agrupados[chave].exemplos.add(item.codigo);
+      });
+
+      const itensOrdenados = Object.values(agrupados)
+        .map((item) => ({ ...item, exemplos: Array.from(item.exemplos) }))
+        .sort((a, b) => b.count - a.count);
       const totalBuscas = itensOrdenados.reduce((soma, item) => soma + (item.count || 0), 0);
 
       if (!itensOrdenados.length || !totalBuscas) {
@@ -1362,8 +1398,8 @@
       const linhas = itensTabela.map((item, idx) => `
         <tr>
           <td style="width:32px;">${idx + 1}º</td>
-          <td>${item.codigo}</td>
-          <td>${item.descricao || "Sem descrição"}</td>
+          <td>${item.label}</td>
+          <td>${item.exemplos && item.exemplos.length ? item.exemplos.slice(0,3).join(", ") : "-"}</td>
           <td style="text-align:right; font-weight:600;">${item.count}</td>
         </tr>
       `).join("");
@@ -1371,7 +1407,7 @@
       dashboardBuscas.innerHTML = `
         <table>
           <thead>
-            <tr><th>#</th><th>Código</th><th>Produto</th><th style="text-align:right;">Buscas</th></tr>
+            <tr><th>#</th><th>Grupo</th><th>Exemplos</th><th style="text-align:right;">Buscas</th></tr>
           </thead>
           <tbody>${linhas}</tbody>
         </table>
@@ -1385,7 +1421,7 @@
             <div class="buscas-chart-row">
               <div class="buscas-chart-bar-wrapper">
                 <div class="buscas-chart-bar" style="width:${percentual}%;"></div>
-                <span class="buscas-chart-label">${item.codigo}</span>
+                <span class="buscas-chart-label">${item.label}</span>
               </div>
               <div style="text-align:right;">${percentual}%</div>
             </div>
