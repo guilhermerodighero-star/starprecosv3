@@ -320,6 +320,14 @@
       background: #fafafa;
       font-size: 12px;
     }
+        .buscas-resumo {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 4px 10px;
+      color: #333;
+      font-weight: 600;
+    }
     .dashboard-buscas table {
       width: 100%;
       border-collapse: collapse;
@@ -339,8 +347,45 @@
     .dashboard-buscas tr:last-child td {
       border-bottom: none;
     }
-
-        .loja-link {
+    .buscas-chart {
+      margin-top: 8px;
+      border-top: 1px solid #eee;
+      padding-top: 8px;
+      display: grid;
+      gap: 6px;
+    }
+    .buscas-chart-row {
+      display: grid;
+      grid-template-columns: 1fr 70px;
+      gap: 8px;
+      align-items: center;
+      font-size: 11px;
+      color: #333;
+    }
+    .buscas-chart-bar-wrapper {
+      position: relative;
+      height: 18px;
+      background: #f2f4ff;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid #e1e6ff;
+    }
+    .buscas-chart-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #0b915e, #1460d2);
+      border-radius: 6px;
+      transition: width 0.3s ease;
+    }
+    .buscas-chart-label {
+      position: absolute;
+      left: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-weight: 700;
+      font-size: 11px;
+      color: #0b915e;
+    }
+    .loja-link {
       background: none;
       border: none;
       padding: 0;
@@ -544,10 +589,13 @@
           <div class="list-card stack">
             <strong>Cadastros atuais</strong>
             <div id="resumoCadastros" class="muted"></div>
-                      <div class="list-card stack" id="dashboardBuscasCard" style="display:none;">
+          </div>
+            <div class="list-card stack" id="dashboardBuscasCard" style="display:none;">
             <strong>Produtos mais buscados</strong>
-            <div class="muted">Disponível apenas para administradores.</div>
+            <div class="muted">Disponível apenas para administradores. Consolidado de todas as pesquisas.</div>
+            <div id="dashboardBuscasResumo" class="buscas-resumo" style="display:none;"></div>
             <div id="dashboardBuscas" class="dashboard-buscas"></div>
+            <div id="dashboardBuscasGrafico" class="buscas-chart"></div>
             <button id="btnLimparBuscas" type="button">🧹 Limpar histórico de buscas</button>
           </div>
         </div>
@@ -901,6 +949,8 @@
     const resumoCadastrosDiv = document.getElementById("resumoCadastros");
     const dashboardBuscas = document.getElementById("dashboardBuscas");
     const dashboardBuscasCard = document.getElementById("dashboardBuscasCard");
+    const dashboardBuscasResumo = document.getElementById("dashboardBuscasResumo");
+    const dashboardBuscasGrafico = document.getElementById("dashboardBuscasGrafico");
     const btnLimparBuscas = document.getElementById("btnLimparBuscas");
     const lojaRepresentanteSelect = document.getElementById("lojaRepresentante");
     const consultoresInputs = document.getElementById("consultoresInputs");
@@ -1290,13 +1340,26 @@
       dashboardBuscasCard.style.display = adminAtivo ? "block" : "none";
       if (!adminAtivo) return;
 
-      const itens = Object.values(estatisticasBusca || {}).sort((a, b) => b.count - a.count).slice(0, 8);
-      if (!itens.length) {
+      const itensOrdenados = Object.values(estatisticasBusca || {}).sort((a, b) => b.count - a.count);
+      const totalBuscas = itensOrdenados.reduce((soma, item) => soma + (item.count || 0), 0);
+
+      if (!itensOrdenados.length || !totalBuscas) {
         dashboardBuscas.innerHTML = '<div class="muted">Nenhuma busca registrada ainda.</div>';
+        if (dashboardBuscasResumo) dashboardBuscasResumo.style.display = "none";
+        if (dashboardBuscasGrafico) dashboardBuscasGrafico.innerHTML = "";
         return;
       }
 
-      let linhas = itens.map((item, idx) => `
+      if (dashboardBuscasResumo) {
+        dashboardBuscasResumo.style.display = "flex";
+        dashboardBuscasResumo.innerHTML = `
+          <span>Total consolidado</span>
+          <span>${totalBuscas} busca(s) registradas</span>
+        `;
+      }
+
+      const itensTabela = itensOrdenados.slice(0, 8);
+      const linhas = itensTabela.map((item, idx) => `
         <tr>
           <td style="width:32px;">${idx + 1}º</td>
           <td>${item.codigo}</td>
@@ -1313,6 +1376,24 @@
           <tbody>${linhas}</tbody>
         </table>
       `;
+
+      if (dashboardBuscasGrafico) {
+        const itensGrafico = itensOrdenados.slice(0, 6);
+        const linhasGrafico = itensGrafico.map((item) => {
+          const percentual = Math.round(((item.count || 0) / totalBuscas) * 100);
+          return `
+            <div class="buscas-chart-row">
+              <div class="buscas-chart-bar-wrapper">
+                <div class="buscas-chart-bar" style="width:${percentual}%;"></div>
+                <span class="buscas-chart-label">${item.codigo}</span>
+              </div>
+              <div style="text-align:right;">${percentual}%</div>
+            </div>
+          `;
+        }).join("");
+
+        dashboardBuscasGrafico.innerHTML = linhasGrafico;
+      }
     }
 
     function adicionarConsultorInput(nome = "", login = "", senha = "") {
