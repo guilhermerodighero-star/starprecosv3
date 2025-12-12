@@ -294,6 +294,15 @@
       font-weight: 700;
       text-align: right;
     }
+        .loja-link {
+      background: none;
+      border: none;
+      padding: 0;
+      color: #1460d2;
+      text-decoration: underline;
+      cursor: pointer;
+      font-size: 12px;
+    }
     .btn-remover-orcamento {
       border-color: #b3261e;
       color: #b3261e;
@@ -476,6 +485,7 @@
             <div id="consultoresInputs" class="stack"></div>
             <button id="btnAdicionarConsultor">➕ Adicionar consultor</button>
             <button id="btnCadastrarLoja">🏬 Cadastrar loja</button>
+            <button id="btnSalvarLoja" class="primary" style="display:none;">💾 Salvar alterações</button>
           </div>
           <div class="list-card stack">
             <strong>Cadastros atuais</strong>
@@ -834,6 +844,7 @@
     const btnAdicionarConsultor = document.getElementById("btnAdicionarConsultor");
     const btnCadastrarRep = document.getElementById("btnCadastrarRep");
     const btnCadastrarLoja = document.getElementById("btnCadastrarLoja");
+    const btnSalvarLoja = document.getElementById("btnSalvarLoja");
     const repNomeInput = document.getElementById("repNome");
     const repLoginInput = document.getElementById("repLogin");
     const repSenhaInput = document.getElementById("repSenha");
@@ -866,6 +877,7 @@
 
     let dadosSistema = { representantes: [], lojas: [] };
     let orcamentosSalvos = [];
+    let lojaEmEdicaoId = null;
 
     // Modal imagem
     const imageModal = document.getElementById("imageModal");
@@ -1152,7 +1164,8 @@
           const lojas = dadosSistema.lojas.filter(l => l.representanteId === rep.id);
           html += `<div><strong>${rep.nome}</strong> (${rep.login}) – ${lojas.length} loja(s)</div>`;
           lojas.forEach(loja => {
-            html += `<div class="muted" style="padding-left:10px;">🏬 ${loja.nome} – gerente: ${loja.gerente.login}, consultores: ${loja.consultores.length}</div>`;
+            const lojaLink = `<button class="loja-link" data-loja-id="${loja.id}" title="Editar loja">${loja.nome}</button>`;
+            html += `<div class="muted" style="padding-left:10px;">🏬 ${lojaLink} – gerente: ${loja.gerente.login}, consultores: ${loja.consultores.length}</div>`;
           });
         });
       }
@@ -1183,6 +1196,42 @@
         login: row.querySelector(".consultor-login").value.trim(),
         senha: row.querySelector(".consultor-senha").value.trim(),
       })).filter(c => c.nome && c.login && c.senha).slice(0, 4);
+    }
+
+    function preencherFormularioLoja(loja) {
+      if (!loja) return;
+      lojaNomeInput.value = loja.nome || "";
+      lojaCidadeInput.value = loja.cidade || "";
+      lojaEstadoInput.value = loja.estado || "";
+      lojaTelefoneInput.value = loja.telefone || "";
+      lojaCnpjInput.value = loja.cnpj || "";
+      lojaRepresentanteSelect.value = loja.representanteId || "";
+      lojaGerenteNomeInput.value = loja.gerente?.login || "";
+      lojaGerenteSenhaInput.value = loja.gerente?.senha || "";
+
+      consultoresInputs.innerHTML = "";
+      if (loja.consultores && loja.consultores.length) {
+        loja.consultores.forEach(c => adicionarConsultorInput(c.nome, c.login, c.senha));
+      } else {
+        adicionarConsultorInput();
+      }
+
+      lojaEmEdicaoId = loja.id;
+      btnSalvarLoja.style.display = "inline-flex";
+    }
+
+    function limparFormularioLoja() {
+      lojaNomeInput.value = "";
+      lojaCidadeInput.value = "";
+      lojaEstadoInput.value = "";
+      lojaTelefoneInput.value = "";
+      lojaCnpjInput.value = "";
+      lojaRepresentanteSelect.value = "";
+      lojaGerenteNomeInput.value = "";
+      lojaGerenteSenhaInput.value = "";
+      lojaEmEdicaoId = null;
+      btnSalvarLoja.style.display = "none";
+      limparConsultoresForm();
     }
 
     function renderizarOrcamentosSalvos() {
@@ -2260,6 +2309,19 @@
       }
     });
 
+    resumoCadastrosDiv.addEventListener("click", (event) => {
+      const target = event.target;
+      if (target.classList.contains("loja-link")) {
+        event.preventDefault();
+        const lojaId = target.dataset.lojaId;
+        const loja = dadosSistema.lojas.find(l => l.id === lojaId);
+        if (loja) {
+          preencherFormularioLoja(loja);
+          lojaNomeInput.focus();
+        }
+      }
+    });
+
     btnCadastrarRep.addEventListener("click", () => {
       const nome = repNomeInput.value.trim();
       const login = repLoginInput.value.trim();
@@ -2310,16 +2372,53 @@
       dadosSistema.lojas.push(loja);
       salvarDadosPersistidos();
       renderizarResumoCadastros();
-      limparConsultoresForm();
-      lojaNomeInput.value = "";
-      lojaCidadeInput.value = "";
-      lojaEstadoInput.value = "";
-      lojaTelefoneInput.value = "";
-      lojaCnpjInput.value = "";
-      lojaGerenteNomeInput.value = "";
-      lojaGerenteSenhaInput.value = "";
-      lojaRepresentanteSelect.value = "";
+      limparFormularioLoja();
       alert("Loja cadastrada com sucesso.");
+    });
+    
+    btnSalvarLoja.addEventListener("click", () => {
+      if (!lojaEmEdicaoId) {
+        alert("Selecione uma loja nos cadastros atuais para editar.");
+        return;
+      }
+
+      const nome = lojaNomeInput.value.trim();
+      const cidade = lojaCidadeInput.value.trim();
+      const estado = lojaEstadoInput.value.trim();
+      const telefone = lojaTelefoneInput.value.trim();
+      const cnpj = lojaCnpjInput.value.trim();
+      const representanteId = lojaRepresentanteSelect.value;
+      const gerenteLogin = lojaGerenteNomeInput.value.trim();
+      const gerenteSenha = lojaGerenteSenhaInput.value.trim();
+      const consultores = coletarConsultoresDoForm();
+
+      if (!nome || !cidade || !estado || !telefone || !cnpj || !representanteId || !gerenteLogin || !gerenteSenha) {
+        alert("Preencha todos os campos da loja e vincule a uma representante.");
+        return;
+      }
+
+      const idx = dadosSistema.lojas.findIndex(l => l.id === lojaEmEdicaoId);
+      if (idx === -1) {
+        alert("Não foi possível localizar a loja selecionada para edição.");
+        return;
+      }
+
+      dadosSistema.lojas[idx] = {
+        ...dadosSistema.lojas[idx],
+        nome,
+        cidade,
+        estado,
+        telefone,
+        cnpj,
+        representanteId,
+        gerente: { login: gerenteLogin, senha: gerenteSenha },
+        consultores: consultores.map(c => ({ ...c })),
+      };
+
+      salvarDadosPersistidos();
+      renderizarResumoCadastros();
+      limparFormularioLoja();
+      alert("Dados da loja atualizados com sucesso.");
     });
   </script>
 </body>
