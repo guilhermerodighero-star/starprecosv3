@@ -310,6 +310,13 @@
       padding: 4px 8px;
       font-size: 11px;
     }
+        .btn-editar-orcamento {
+      border-color: #1460d2;
+      color: #1460d2;
+      background: #eef3ff;
+      padding: 4px 8px;
+      font-size: 11px;
+    }
     footer {
       font-size: 11px;
       color: #777;
@@ -1267,13 +1274,72 @@
         div.className = "list-card";
         const data = new Date(orc.criadoEm);
         const lojaInfo = orc.lojaNome ? ` • Loja: ${orc.lojaNome}` : "";
+        const botaoEditar = orc.itens && Object.keys(orc.itens).length
+          ? `<button type="button" class="btn-editar-orcamento" data-orcamento-id="${orc.id}">✏️ Editar orçamento</button>`
+          : "";
         div.innerHTML = `
           <div><strong>${orc.titulo}</strong></div>
           <div class="muted">${data.toLocaleString()} • Criado por ${orc.criadorNome}${lojaInfo}</div>
           <div class="muted">Total: R$ ${formatarPreco(orc.total)}</div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;">${botaoEditar}</div>
           <details style="margin-top:4px;"><summary>Ver detalhes</summary><pre style="white-space:pre-wrap; font-size:11px;">${orc.texto}</pre></details>
         `;
         orcamentosSalvosLista.appendChild(div);
+      });
+    }
+
+        function carregarOrcamentoParaEdicao(registro) {
+      if (!registro || !registro.itens || !Object.keys(registro.itens).length) {
+        alert("Este orçamento salvo não possui itens para edição.");
+        return;
+      }
+
+      orcamento = JSON.parse(JSON.stringify(registro.itens || {}));
+
+      try {
+        if (registro.partesConfig) {
+          sessionStorage.setItem(STORAGE_KEY_PARTES, JSON.stringify(registro.partesConfig));
+        } else {
+          sessionStorage.removeItem(STORAGE_KEY_PARTES);
+        }
+      } catch (e) {
+        console.error("Erro ao restaurar configuração de partes:", e);
+      }
+
+      const cabecalho = registro.cabecalho || {};
+      orcClienteInput.value = cabecalho.cliente || "";
+      orcTelefoneInput.value = cabecalho.telefone || "";
+      orcVendedorInput.value = cabecalho.vendedor || "";
+      orcValidadeInput.value = cabecalho.validade || orcValidadeInput.value;
+
+      if (!modoOrcamento) {
+        modoOrcamento = true;
+      }
+
+      aplicarModoOrcamentoUI();
+
+      if (campoBusca.value.trim()) {
+        buscarProduto(campoBusca.value);
+      } else {
+        resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
+      }
+
+      alert("Orçamento carregado. Atualize quantidades ou adicione novos itens e salve novamente.");
+    }
+
+    if (orcamentosSalvosLista) {
+      orcamentosSalvosLista.addEventListener("click", (event) => {
+        const btn = event.target.closest(".btn-editar-orcamento");
+        if (!btn) return;
+
+        const id = btn.getAttribute("data-orcamento-id");
+        const registro = orcamentosSalvos.find(o => o.id === id);
+        if (!registro) {
+          alert("Não foi possível localizar este orçamento salvo.");
+          return;
+        }
+
+        carregarOrcamentoParaEdicao(registro);
       });
     }
 
@@ -2175,7 +2241,7 @@
         }
       }
 
-            if (target.id === "btnSalvarOrcamento") {
+      if (target.id === "btnSalvarOrcamento") {
         if (!usuarioLogado) {
           alert("Entre com um usuário válido para salvar o orçamento.");
           return;
@@ -2187,6 +2253,25 @@
           return;
         }
 
+                const itensParaSalvar = {};
+        Object.entries(orcamento).forEach(([id, item]) => {
+          itensParaSalvar[id] = { ...item };
+        });
+
+        const cabecalho = {
+          cliente: orcClienteInput.value.trim(),
+          telefone: orcTelefoneInput.value.trim(),
+          vendedor: orcVendedorInput.value.trim(),
+          validade: orcValidadeInput.value.trim(),
+        };
+
+        let partesConfig = null;
+        try {
+          partesConfig = getPartesConfig();
+        } catch (e) {
+          partesConfig = null;
+        }
+
         const lojaAtual = usuarioLogado.lojaId ? dadosSistema.lojas.find(l => l.id === usuarioLogado.lojaId) : null;
         const registro = {
           id: Date.now().toString(),
@@ -2194,6 +2279,9 @@
           criadoEm: Date.now(),
           texto: dados.texto,
           total: dados.total,
+          itens: itensParaSalvar,
+          partesConfig,
+          cabecalho,
           criadorNome: usuarioLogado.nome || usuarioLogado.login,
           login: usuarioLogado.login,
           role: usuarioLogado.role,
