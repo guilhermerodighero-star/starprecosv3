@@ -313,6 +313,33 @@
       font-weight: 700;
       text-align: right;
     }
+    .dashboard-buscas {
+      border: 1px solid #eee;
+      border-radius: 8px;
+      padding: 8px;
+      background: #fafafa;
+      font-size: 12px;
+    }
+    .dashboard-buscas table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .dashboard-buscas th,
+    .dashboard-buscas td {
+      text-align: left;
+      padding: 6px 4px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .dashboard-buscas th {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #555;
+    }
+    .dashboard-buscas tr:last-child td {
+      border-bottom: none;
+    }
+
         .loja-link {
       background: none;
       border: none;
@@ -517,6 +544,11 @@
           <div class="list-card stack">
             <strong>Cadastros atuais</strong>
             <div id="resumoCadastros" class="muted"></div>
+                      <div class="list-card stack" id="dashboardBuscasCard" style="display:none;">
+            <strong>Produtos mais buscados</strong>
+            <div class="muted">Disponível apenas para administradores.</div>
+            <div id="dashboardBuscas" class="dashboard-buscas"></div>
+            <button id="btnLimparBuscas" type="button">🧹 Limpar histórico de buscas</button>
           </div>
         </div>
       </div>
@@ -867,6 +899,9 @@
     const adminArea = document.getElementById("adminArea");
     const orcamentosSalvosLista = document.getElementById("orcamentosSalvosLista");
     const resumoCadastrosDiv = document.getElementById("resumoCadastros");
+    const dashboardBuscas = document.getElementById("dashboardBuscas");
+    const dashboardBuscasCard = document.getElementById("dashboardBuscasCard");
+    const btnLimparBuscas = document.getElementById("btnLimparBuscas");
     const lojaRepresentanteSelect = document.getElementById("lojaRepresentante");
     const consultoresInputs = document.getElementById("consultoresInputs");
     const btnAdicionarConsultor = document.getElementById("btnAdicionarConsultor");
@@ -899,6 +934,7 @@
     const STORAGE_KEY_FRETE = "starmobile_frete_percent";
     const STORAGE_KEY_MARKUP = "starmobile_markup_percent";
     const STORAGE_KEY_MAX_DESC = "starmobile_max_desconto_percent";
+    const STORAGE_KEY_BUSCAS = "starmobile_buscas";
 
     const SENHA_GERENTE = "STAR2025";
     const CREDENCIAIS_ADMIN = { login: "admin", senha: "$tarmobile2025", nome: "Starmobile" };
@@ -906,6 +942,8 @@
     let dadosSistema = { representantes: [], lojas: [] };
     let orcamentosSalvos = [];
     let lojaEmEdicaoId = null;
+    let estatisticasBusca = {};
+    let ultimaBuscaRegistrada = "";
 
     // Modal imagem
     const imageModal = document.getElementById("imageModal");
@@ -1174,6 +1212,7 @@
 
       adminArea.style.display = usuarioLogado && usuarioLogado.role === "admin" ? "block" : "none";
       renderizarOrcamentosSalvos();
+      renderizarDashboardBuscas();
     }
 
     function atualizarSelectRepresentantes() {
@@ -1206,6 +1245,74 @@
         });
       }
       resumoCadastrosDiv.innerHTML = html;
+    }
+
+        function carregarEstatisticasBusca() {
+      try {
+        const salvo = localStorage.getItem(STORAGE_KEY_BUSCAS);
+        estatisticasBusca = salvo ? JSON.parse(salvo) : {};
+      } catch (e) {
+        console.error("Erro ao carregar estatísticas de busca:", e);
+        estatisticasBusca = {};
+      }
+      renderizarDashboardBuscas();
+    }
+
+    function salvarEstatisticasBusca() {
+      try {
+        localStorage.setItem(STORAGE_KEY_BUSCAS, JSON.stringify(estatisticasBusca));
+      } catch (e) {
+        console.error("Erro ao salvar estatísticas de busca:", e);
+      }
+    }
+
+    function registrarBusca(produtosEncontrados) {
+      if (!Array.isArray(produtosEncontrados) || produtosEncontrados.length === 0) return;
+      const idsUnicos = new Set();
+      produtosEncontrados.forEach(p => {
+        if (!p || p._id == null) return;
+        const id = String(p._id);
+        if (idsUnicos.has(id)) return;
+        idsUnicos.add(id);
+
+        if (!estatisticasBusca[id]) {
+          estatisticasBusca[id] = { codigo: p.codigo, descricao: p.chaves || "", count: 0 };
+        }
+        estatisticasBusca[id].count += 1;
+      });
+      salvarEstatisticasBusca();
+      renderizarDashboardBuscas();
+    }
+
+    function renderizarDashboardBuscas() {
+      if (!dashboardBuscas || !dashboardBuscasCard) return;
+      const adminAtivo = usuarioLogado && usuarioLogado.role === "admin";
+      dashboardBuscasCard.style.display = adminAtivo ? "block" : "none";
+      if (!adminAtivo) return;
+
+      const itens = Object.values(estatisticasBusca || {}).sort((a, b) => b.count - a.count).slice(0, 8);
+      if (!itens.length) {
+        dashboardBuscas.innerHTML = '<div class="muted">Nenhuma busca registrada ainda.</div>';
+        return;
+      }
+
+      let linhas = itens.map((item, idx) => `
+        <tr>
+          <td style="width:32px;">${idx + 1}º</td>
+          <td>${item.codigo}</td>
+          <td>${item.descricao || "Sem descrição"}</td>
+          <td style="text-align:right; font-weight:600;">${item.count}</td>
+        </tr>
+      `).join("");
+
+      dashboardBuscas.innerHTML = `
+        <table>
+          <thead>
+            <tr><th>#</th><th>Código</th><th>Produto</th><th style="text-align:right;">Buscas</th></tr>
+          </thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      `;
     }
 
     function adicionarConsultorInput(nome = "", login = "", senha = "") {
@@ -1595,6 +1702,11 @@
         statusSpan.textContent = "1 produto encontrado";
       } else {
         statusSpan.textContent = matches.length + " produtos encontrados";
+      }
+
+     if (termoNorm !== ultimaBuscaRegistrada) {
+        registrarBusca(matches);
+        ultimaBuscaRegistrada = termoNorm;
       }
 
       const fatores = calcularFatoresEDesconto();
@@ -2391,6 +2503,7 @@
       carregarDadosPersistidos();
       atualizarSelectRepresentantes();
       renderizarResumoCadastros();
+      carregarEstatisticasBusca();
       limparConsultoresForm();
       atualizarUIAutenticacao();
     }
@@ -2437,6 +2550,12 @@
           lojaNomeInput.focus();
         }
       }
+    });
+
+    btnLimparBuscas.addEventListener("click", () => {
+      estatisticasBusca = {};
+      salvarEstatisticasBusca();
+      renderizarDashboardBuscas();
     });
 
     btnCadastrarRep.addEventListener("click", () => {
