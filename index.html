@@ -1027,20 +1027,28 @@
         .trim();
     }
 
-        function chaveAgrupamentoBusca(descricao = "", codigo = "") {
-      const texto = normalizar(descricao || codigo || "");
-      const palavras = texto.split(/\s+/).filter(Boolean);
-      if (!palavras.length) return normalizar(codigo || "OUTRO");
-      if (palavras.length >= 2) return palavras[1];
-      return palavras[0];
+        function extrairAgrupamentoPrincipal(descricao = "", codigo = "") {
+      const textoOriginal = (descricao || codigo || "").trim();
+      const palavrasOriginais = textoOriginal.split(/\s+/).filter(Boolean);
+      const principaisOriginais = palavrasOriginais.slice(0, 3);
+
+      const labelBase = principaisOriginais.length
+        ? principaisOriginais.join(" ")
+        : codigo || "Sem descrição";
+
+      const chaveBase = principaisOriginais.join(" ") || codigo || "OUTRO";
+      return {
+        chave: normalizar(chaveBase),
+        label: labelBase.toUpperCase(),
+      };
+    }
+
+    function chaveAgrupamentoBusca(descricao = "", codigo = "") {
+        return extrairAgrupamentoPrincipal(descricao, codigo).chave;
     }
 
     function labelAgrupamentoBusca(descricao = "", codigo = "") {
-      const texto = (descricao || codigo || "").trim();
-      if (!texto) return codigo || "Sem descrição";
-      const palavras = texto.split(/\s+/).filter(Boolean);
-      const label = palavras.length >= 2 ? palavras[1] : palavras[0];
-      return label.toUpperCase();
+      return extrairAgrupamentoPrincipal(descricao, codigo).label;
     }
 
         function carregarDadosPersistidos() {
