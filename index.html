@@ -24,6 +24,11 @@
       flex-wrap: wrap;
       gap: 8px;
     }
+        .header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
     header h1 {
       font-size: 18px;
       margin: 0;
@@ -31,6 +36,14 @@
     .tagline {
       font-size: 12px;
       opacity: 0.8;
+    }
+        .user-info {
+      font-size: 12px;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 4px 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      width: fit-content;
     }
     .header-actions {
       display: flex;
@@ -120,6 +133,11 @@
     input[type="text"] {
       flex: 1;
       min-width: 200px;
+    }
+    .campo-padrao {
+      flex: 0 0 auto;
+      width: 240px;
+      max-width: 100%;
     }
     button {
       padding: 6px 10px;
@@ -427,11 +445,12 @@
 </head>
 <body>
   <header>
-    <div>
+  <div class="header-left">
       <h1>Consulta de Preços – Starmobile</h1>
       <div class="tagline">
         Uso interno: Pesquisa por código, nome e palavras-chave.
       </div>
+      <div id="usuarioResumo" class="user-info">Nenhum usuário logado.</div>
     </div>
     <div class="header-actions">
       <span id="orcamentoBadge" class="badge-orcamento" style="display:none;">Modo orçamento</span>
@@ -472,8 +491,8 @@
         <div class="grid">
           <div class="list-card stack">
             <strong>Cadastro de representante</strong>
-            <input id="repNome" type="text" placeholder="Nome da Representada" />
-            <input id="repLogin" type="text" placeholder="Nome de Login" />
+            <input id="repNome" class="campo-padrao" type="text" placeholder="Nome da Representada" />
+            <input id="repLogin" class="campo-padrao" type="text" placeholder="Nome de Login" />
             <input id="repSenha" type="password" placeholder="Senha" />
             <button id="btnCadastrarRep">➕ Cadastrar representante</button>
           </div>
@@ -836,8 +855,9 @@
     const btnToggleOrcamento = document.getElementById("btnToggleOrcamento");
     const orcamentoBadge = document.getElementById("orcamentoBadge");
     const orcamentoHeaderDiv = document.getElementById("orcamentoHeader");
+    const usuarioResumo = document.getElementById("usuarioResumo");
 
-        const loginUsuarioInput = document.getElementById("loginUsuario");
+    const loginUsuarioInput = document.getElementById("loginUsuario");
     const loginSenhaInput = document.getElementById("loginSenha");
     const btnLogin = document.getElementById("btnLogin");
     const btnLogout = document.getElementById("btnLogout");
@@ -1118,9 +1138,17 @@
       return usuario.nome || usuario.login;
     }
 
+    function nomeUsuarioSimples(usuario) {
+      if (!usuario) return "Nenhum usuário logado";
+      return usuario.nome || usuario.login || "Usuário";
+    }
+
     function atualizarUIAutenticacao() {
       const descricao = descreverUsuario(usuarioLogado);
       loginStatus.textContent = descricao;
+      usuarioResumo.textContent = usuarioLogado
+        ? `Usuário: ${nomeUsuarioSimples(usuarioLogado)}`
+        : "Nenhum usuário logado.";
       permissoesAtivas.style.display = usuarioLogado ? "inline-block" : "none";
       btnLogout.style.display = usuarioLogado ? "inline-flex" : "none";
       btnLogin.style.display = usuarioLogado ? "none" : "inline-flex";
