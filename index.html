@@ -1339,7 +1339,7 @@
       }
     }
 
-    function registrarCliqueBusca(produto) {
+    function registrarBuscaProduto(produto) {
       if (!produto || produto._id == null) return;
       const id = String(produto._id);
       if (!estatisticasBusca[id]) {
@@ -1726,7 +1726,7 @@
     }
     aplicarFiltroCategoriaUI();
 
-    function buscarProduto(termoBruto) {
+    function buscarProduto(termoBruto, registrarBusca = false) {
       let termoOriginal = String(termoBruto || "").trim();
       if (!termoOriginal) {
         statusSpan.textContent = "Informe um código ou termo para busca.";
@@ -1811,6 +1811,10 @@
         statusSpan.textContent = "Produto não encontrado para: " + termoOriginal;
         resultadoDiv.innerHTML = modoOrcamento ? renderizarResumoOrcamento(calcularFatoresEDesconto()) : "";
         return;
+      }
+
+            if (registrarBusca && matches[0]) {
+        registrarBuscaProduto(matches[0]);
       }
 
       if (matches.length === 1) {
@@ -2266,12 +2270,12 @@
     }
 
     btnBuscar.addEventListener("click", () => {
-      buscarProduto(campoBusca.value);
+      buscarProduto(campoBusca.value, true);
     });
 
     campoBusca.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
-        buscarProduto(campoBusca.value);
+        buscarProduto(campoBusca.value, true);
       }
     });
 
@@ -2363,19 +2367,6 @@
       categoriaFiltro = "POLTRONA";
       aplicarFiltroCategoriaUI();
       if (campoBusca.value.trim()) buscarProduto(campoBusca.value);
-    });
-
-    // Delegação de eventos para orçamento
-        resultadoDiv.addEventListener("click", (event) => {
-      const item = event.target.closest(".item");
-      if (!item) return;
-      if (event.target.closest("input, select, button, textarea, label")) return;
-
-      const produtoId = item.getAttribute("data-id");
-      const produto = produtos.find(pp => String(pp._id) === String(produtoId));
-      if (produto) {
-        registrarCliqueBusca(produto);
-      }
     });
 
     resultadoDiv.addEventListener("change", (event) => {
