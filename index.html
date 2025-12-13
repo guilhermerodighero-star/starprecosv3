@@ -608,7 +608,7 @@
       </div>
     </div>
  
-    <div class="card">
+    <div class="card" id="buscaCard" style="display:none;">
       <div id="adminConfig">
         <div class="controls-row">
           <label for="ipiPercent">IPI (%):</label>
@@ -951,6 +951,7 @@
     const loginStatus = document.getElementById("loginStatus");
     const permissoesAtivas = document.getElementById("permissoesAtivas");
     const adminArea = document.getElementById("adminArea");
+    const buscaCard = document.getElementById("buscaCard");
     const orcamentosSalvosLista = document.getElementById("orcamentosSalvosLista");
     const resumoCadastrosDiv = document.getElementById("resumoCadastros");
     const dashboardBuscas = document.getElementById("dashboardBuscas");
@@ -1293,6 +1294,12 @@
       if (campoBusca.value.trim()) buscarProduto(campoBusca.value);
 
       adminArea.style.display = usuarioLogado && usuarioLogado.role === "admin" ? "block" : "none";
+            buscaCard.style.display = usuarioLogado ? "block" : "none";
+      if (!usuarioLogado) {
+        campoBusca.value = "";
+        statusSpan.textContent = "";
+        resultadoDiv.innerHTML = "";
+      }
       renderizarOrcamentosSalvos();
       renderizarDashboardBuscas();
     }
@@ -1767,6 +1774,12 @@
     aplicarFiltroCategoriaUI();
 
     function buscarProduto(termoBruto, registrarBusca = false) {
+          if (!usuarioLogado) {
+        statusSpan.textContent = "Faça login para buscar produtos.";
+        resultadoDiv.innerHTML = "";
+        return;
+      }
+
       let termoOriginal = String(termoBruto || "").trim();
       if (!termoOriginal) {
         statusSpan.textContent = "Informe um código ou termo para busca.";
