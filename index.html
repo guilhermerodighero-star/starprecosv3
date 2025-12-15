@@ -590,25 +590,7 @@
             <strong>Cadastros atuais</strong>
             <div id="resumoCadastros" class="muted"></div>
           </div>
-          <div class="list-card stack">
-            <strong>Sincronização com GitHub</strong>
-            <div class="muted">Envie cadastros, orçamentos e histórico de buscas para um repositório privado.</div>
-            <label style="display:flex; gap:6px; align-items:center;">
-              <input id="githubSyncAtivo" type="checkbox" /> Ativar sincronização automática
-            </label>
-            <input id="githubOwner" class="campo-padrao" type="text" placeholder="Usuário ou organização" />
-            <input id="githubRepo" class="campo-padrao" type="text" placeholder="Repositório" />
-            <input id="githubBranch" class="campo-padrao" type="text" placeholder="Branch (ex.: main)" />
-            <input id="githubBasePath" class="campo-padrao" type="text" placeholder="Pasta (ex.: dados)" />
-            <input id="githubToken" type="password" placeholder="Token de acesso pessoal (scope repo)" />
-            <div class="muted">O token é salvo apenas no seu navegador e usado para enviar os arquivos JSON.</div>
-            <div class="controls-buttons">
-              <button id="btnSalvarGithub" type="button">💾 Salvar configuração</button>
-              <button id="btnTestarGithub" type="button">🚀 Enviar agora</button>
-            </div>
-            <div id="githubStatus" class="muted">Configure o acesso antes de ativar.</div>
-          </div>
-          <div class="list-card stack" id="dashboardBuscasCard" style="display:none;">
+            <div class="list-card stack" id="dashboardBuscasCard" style="display:none;">
             <strong>Produtos mais buscados</strong>
             <div class="muted">Disponível apenas para administradores. Consolidado de todas as pesquisas.</div>
             <div id="dashboardBuscasResumo" class="buscas-resumo" style="display:none;"></div>
@@ -980,15 +962,6 @@
     const btnImportarBuscas = document.getElementById("btnImportarBuscas");
     const inputImportarBuscas = document.getElementById("inputImportarBuscas");
     const btnLimparBuscas = document.getElementById("btnLimparBuscas");
-    const githubSyncAtivoInput = document.getElementById("githubSyncAtivo");
-    const githubOwnerInput = document.getElementById("githubOwner");
-    const githubRepoInput = document.getElementById("githubRepo");
-    const githubBranchInput = document.getElementById("githubBranch");
-    const githubBasePathInput = document.getElementById("githubBasePath");
-    const githubTokenInput = document.getElementById("githubToken");
-    const githubStatus = document.getElementById("githubStatus");
-    const btnSalvarGithub = document.getElementById("btnSalvarGithub");
-    const btnTestarGithub = document.getElementById("btnTestarGithub");
     const lojaRepresentanteSelect = document.getElementById("lojaRepresentante");
     const consultoresInputs = document.getElementById("consultoresInputs");
     const btnAdicionarConsultor = document.getElementById("btnAdicionarConsultor");
@@ -1022,7 +995,6 @@
     const STORAGE_KEY_MARKUP = "starmobile_markup_percent";
     const STORAGE_KEY_MAX_DESC = "starmobile_max_desconto_percent";
     const STORAGE_KEY_BUSCAS = "starmobile_buscas";
-    const STORAGE_KEY_GITHUB_CFG = "starmobile_github_cfg";
 
     const SENHA_GERENTE = "STAR2025";
     const CREDENCIAIS_ADMIN = { login: "admin", senha: "$tarmobile2025", nome: "Starmobile" };
@@ -1031,15 +1003,6 @@
     let orcamentosSalvos = [];
     let lojaEmEdicaoId = null;
     let estatisticasBusca = {};
-        let githubConfig = {
-      habilitado: false,
-      owner: "",
-      repo: "",
-      branch: "main",
-      basePath: "dados",
-      token: "",
-    };
-    let githubSyncTimeout = null;
 
     // Modal imagem
     const imageModal = document.getElementById("imageModal");
@@ -1134,146 +1097,6 @@
         localStorage.setItem(STORAGE_KEY_SESSAO, JSON.stringify(usuarioLogado));
       } else {
         localStorage.removeItem(STORAGE_KEY_SESSAO);
-      }
-            agendarSincronizacaoGithub();
-    }
-
-    function atualizarGithubStatus(texto, tipo = "info") {
-      if (!githubStatus) return;
-      githubStatus.textContent = texto;
-      githubStatus.style.color = tipo === "erro" ? "#b3261e" : "#555";
-    }
-
-    function normalizarCaminhoGithub(path) {
-      if (!path) return "";
-      return path.replace(/^\/+/, "").replace(/\/+$/, "");
-    }
-
-    function carregarGithubConfig() {
-      try {
-        const salvo = localStorage.getItem(STORAGE_KEY_GITHUB_CFG);
-        if (salvo) {
-          githubConfig = { ...githubConfig, ...(JSON.parse(salvo) || {}) };
-        }
-      } catch (e) {
-        console.error("Erro ao carregar configuração do GitHub:", e);
-      }
-
-      githubConfig.branch = githubConfig.branch || "main";
-      githubConfig.basePath = githubConfig.basePath || "dados";
-
-      if (githubSyncAtivoInput) githubSyncAtivoInput.checked = !!githubConfig.habilitado;
-      if (githubOwnerInput) githubOwnerInput.value = githubConfig.owner || "";
-      if (githubRepoInput) githubRepoInput.value = githubConfig.repo || "";
-      if (githubBranchInput) githubBranchInput.value = githubConfig.branch || "";
-      if (githubBasePathInput) githubBasePathInput.value = githubConfig.basePath || "";
-      if (githubTokenInput) githubTokenInput.value = githubConfig.token || "";
-
-      atualizarGithubStatus(githubConfig.habilitado ? "Sincronização habilitada." : "Configure o acesso antes de ativar.");
-    }
-
-    function salvarGithubConfigLocal() {
-      const cfg = {
-        habilitado: githubSyncAtivoInput?.checked || false,
-        owner: githubOwnerInput?.value.trim() || "",
-        repo: githubRepoInput?.value.trim() || "",
-        branch: githubBranchInput?.value.trim() || "main",
-        basePath: normalizarCaminhoGithub(githubBasePathInput?.value.trim() || "dados"),
-        token: githubTokenInput?.value || "",
-      };
-
-      githubConfig = { ...githubConfig, ...cfg };
-
-      try {
-        localStorage.setItem(STORAGE_KEY_GITHUB_CFG, JSON.stringify(githubConfig));
-        atualizarGithubStatus("Configuração do GitHub salva.");
-      } catch (e) {
-        console.error("Erro ao salvar configuração do GitHub:", e);
-        atualizarGithubStatus("Não foi possível salvar a configuração local.", "erro");
-      }
-    }
-
-    function agendarSincronizacaoGithub() {
-      if (!githubConfig.habilitado) return;
-      if (!githubConfig.token || !githubConfig.owner || !githubConfig.repo) {
-        atualizarGithubStatus("Preencha token, usuário e repositório para sincronizar.", "erro");
-        return;
-      }
-
-      if (githubSyncTimeout) clearTimeout(githubSyncTimeout);
-      githubSyncTimeout = setTimeout(() => {
-        sincronizarDadosGithub();
-      }, 600);
-    }
-
-    async function obterShaArquivoGithub(caminho) {
-      const url = `https://api.github.com/repos/${githubConfig.owner}/${githubConfig.repo}/contents/${caminho}?ref=${githubConfig.branch}`;
-      const resp = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${githubConfig.token}`,
-          Accept: "application/vnd.github+json",
-        },
-      });
-
-      if (resp.status === 200) {
-        const json = await resp.json();
-        return json.sha;
-      }
-
-      if (resp.status === 404) return null;
-      throw new Error(`Erro ao obter SHA (${resp.status})`);
-    }
-
-    async function enviarArquivoGithub(nomeArquivo, dados) {
-      if (!githubConfig.habilitado) return;
-      const basePath = normalizarCaminhoGithub(githubConfig.basePath || "dados");
-      const caminho = basePath ? `${basePath}/${nomeArquivo}` : nomeArquivo;
-
-      const shaExistente = await obterShaArquivoGithub(caminho);
-      const conteudo = JSON.stringify(dados, null, 2);
-      const corpo = {
-        message: `Atualiza ${nomeArquivo} via painel Starmobile`,
-        content: btoa(unescape(encodeURIComponent(conteudo))),
-        branch: githubConfig.branch || "main",
-      };
-      if (shaExistente) corpo.sha = shaExistente;
-
-      const url = `https://api.github.com/repos/${githubConfig.owner}/${githubConfig.repo}/contents/${caminho}`;
-      const resp = await fetch(url, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${githubConfig.token}`,
-          "Content-Type": "application/json",
-          Accept: "application/vnd.github+json",
-        },
-        body: JSON.stringify(corpo),
-      });
-
-      if (![200, 201].includes(resp.status)) {
-        const erro = await resp.text();
-        throw new Error(`Falha ao salvar ${nomeArquivo}: ${resp.status} ${erro}`);
-      }
-    }
-
-    async function sincronizarDadosGithub() {
-      if (!githubConfig.habilitado) return;
-      if (!githubConfig.token || !githubConfig.owner || !githubConfig.repo) {
-        atualizarGithubStatus("Preencha token, usuário e repositório para sincronizar.", "erro");
-        return;
-      }
-      try {
-        atualizarGithubStatus("Enviando dados para o GitHub...");
-        const payload = {
-          atualizadoEm: new Date().toISOString(),
-          cadastros: dadosSistema,
-          orcamentos: orcamentosSalvos,
-          buscas: estatisticasBusca,
-        };
-        await enviarArquivoGithub("starmobile-dados.json", payload);
-        atualizarGithubStatus("Sincronização concluída com sucesso.");
-      } catch (e) {
-        console.error("Erro ao sincronizar com o GitHub:", e);
-        atualizarGithubStatus("Não foi possível sincronizar com o GitHub.", "erro");
       }
     }
 
@@ -1527,7 +1350,6 @@
     function salvarEstatisticasBusca() {
       try {
         localStorage.setItem(STORAGE_KEY_BUSCAS, JSON.stringify(estatisticasBusca));
-        agendarSincronizacaoGithub();
       } catch (e) {
         console.error("Erro ao salvar estatísticas de busca:", e);
       }
@@ -1834,7 +1656,6 @@
     }
 
     carregarConfigNosInputs();
-    agendarSincronizacaoGithub();
     inicializarSeguranca();
 
     fetch("produtos.json")
@@ -2918,18 +2739,6 @@
         inputImportarBuscas.value = "";
       };
       leitor.readAsText(arquivo);
-    });
-
-    btnSalvarGithub?.addEventListener("click", () => {
-      salvarGithubConfigLocal();
-      if (githubConfig.habilitado) {
-        agendarSincronizacaoGithub();
-      }
-    });
-
-    btnTestarGithub?.addEventListener("click", async () => {
-      salvarGithubConfigLocal();
-      await sincronizarDadosGithub();
     });
 
     btnCadastrarRep.addEventListener("click", () => {
