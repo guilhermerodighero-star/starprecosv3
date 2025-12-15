@@ -1575,11 +1575,12 @@
         const botaoEditar = orc.itens && Object.keys(orc.itens).length
           ? `<button type="button" class="btn-editar-orcamento" data-orcamento-id="${orc.id}">✏️ Editar orçamento</button>`
           : "";
+        const botaoExcluir = `<button type="button" class="btn-excluir-orcamento" data-orcamento-id="${orc.id}">🗑️ Excluir</button>`;
         div.innerHTML = `
           <div><strong>${orc.titulo}</strong></div>
           <div class="muted">${data.toLocaleString()} • Criado por ${orc.criadorNome}${lojaInfo}</div>
           <div class="muted">Total: R$ ${formatarPreco(orc.total)}</div>
-          <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;">${botaoEditar}</div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;">${botaoEditar}${botaoExcluir}</div>
           <details style="margin-top:4px;"><summary>Ver detalhes</summary><pre style="white-space:pre-wrap; font-size:11px;">${orc.texto}</pre></details>
         `;
         orcamentosSalvosLista.appendChild(div);
@@ -1627,17 +1628,36 @@
 
     if (orcamentosSalvosLista) {
       orcamentosSalvosLista.addEventListener("click", (event) => {
-        const btn = event.target.closest(".btn-editar-orcamento");
-        if (!btn) return;
+      const btnEditar = event.target.closest(".btn-editar-orcamento");
+      if (btnEditar) {
+          const id = btnEditar.getAttribute("data-orcamento-id");
+          const registro = orcamentosSalvos.find(o => o.id === id);
+          if (!registro) {
+            alert("Não foi possível localizar este orçamento salvo.");
+            return;
+          }
 
-        const id = btn.getAttribute("data-orcamento-id");
-        const registro = orcamentosSalvos.find(o => o.id === id);
-        if (!registro) {
-          alert("Não foi possível localizar este orçamento salvo.");
+        carregarOrcamentoParaEdicao(registro);
           return;
         }
 
-        carregarOrcamentoParaEdicao(registro);
+        const btnExcluir = event.target.closest(".btn-excluir-orcamento");
+        if (btnExcluir) {
+          const id = btnExcluir.getAttribute("data-orcamento-id");
+          const registro = orcamentosSalvos.find(o => o.id === id);
+          if (!registro) {
+            alert("Não foi possível localizar este orçamento salvo para exclusão.");
+            return;
+          }
+
+          const confirmar = confirm(`Deseja excluir o orçamento "${registro.titulo}"? Essa ação não poderá ser desfeita.`);
+          if (!confirmar) return;
+
+          orcamentosSalvos = orcamentosSalvos.filter(o => o.id !== id);
+          salvarDadosPersistidos();
+          renderizarOrcamentosSalvos();
+          alert("Orçamento removido.");
+        }
       });
     }
 
