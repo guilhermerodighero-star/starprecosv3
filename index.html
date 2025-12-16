@@ -644,13 +644,36 @@
           <input id="ipiPercent" type="number" step="0.01" placeholder="ex.: 5" />
           <label for="fretePercent">Frete (%):</label>
           <input id="fretePercent" type="number" step="0.01" placeholder="ex.: 5" />
-          <label for="markupPercent">Markup (%):</label>
-          <input id="markupPercent" type="number" step="0.01" placeholder="ex.: 10" />
         </div>
-        <div class="controls-row">
-          <label for="maxDescontoPercent">Desconto máximo consultor (%):</label>
-          <input id="maxDescontoPercent" type="number" step="0.01" placeholder="ex.: 10" />
-          <button id="btnSalvarConfig">💾 Salvar</button>
+        <div class="stack">
+          <div><strong>Markup e desconto por categoria</strong></div>
+          <div class="controls-row" style="align-items:flex-start; flex-wrap:wrap; gap:12px;">
+            <div class="stack" style="min-width:220px;">
+              <div class="muted"><strong>Poltronas</strong></div>
+              <label for="markupPoltronaPercent">Markup (%):</label>
+              <input id="markupPoltronaPercent" type="number" step="0.01" placeholder="ex.: 10" />
+              <label for="maxDescontoPoltronaPercent">Desconto máximo consultor (%):</label>
+              <input id="maxDescontoPoltronaPercent" type="number" step="0.01" placeholder="ex.: 10" />
+            </div>
+            <div class="stack" style="min-width:220px;">
+              <div class="muted"><strong>Cadeiras</strong></div>
+              <label for="markupCadeiraPercent">Markup (%):</label>
+              <input id="markupCadeiraPercent" type="number" step="0.01" placeholder="ex.: 10" />
+              <label for="maxDescontoCadeiraPercent">Desconto máximo consultor (%):</label>
+              <input id="maxDescontoCadeiraPercent" type="number" step="0.01" placeholder="ex.: 10" />
+            </div>
+            <div class="stack" style="min-width:220px;">
+              <div class="muted"><strong>Mesas</strong></div>
+              <label for="markupMesaPercent">Markup (%):</label>
+              <input id="markupMesaPercent" type="number" step="0.01" placeholder="ex.: 10" />
+              <label for="maxDescontoMesaPercent">Desconto máximo consultor (%):</label>
+              <input id="maxDescontoMesaPercent" type="number" step="0.01" placeholder="ex.: 10" />
+            </div>
+            <div class="stack" style="min-width:220px; gap:12px;">
+              <div class="muted">Esses percentuais incidem apenas na categoria correspondente, considerando a primeira palavra da descrição do produto.</div>
+              <button id="btnSalvarConfig">💾 Salvar</button>
+            </div>
+          </div>
         </div>
         <div class="preco-sec">
           Estes percentuais serão aplicados a todas as consultas neste dispositivo/navegador. O desconto do consultor será limitado ao percentual máximo definido.
@@ -961,8 +984,16 @@
 
     const ipiInput = document.getElementById("ipiPercent");
     const freteInput = document.getElementById("fretePercent");
-    const markupInput = document.getElementById("markupPercent");
-    const maxDescInput = document.getElementById("maxDescontoPercent");
+    const markupInputs = {
+      POLTRONA: document.getElementById("markupPoltronaPercent"),
+      CADEIRA: document.getElementById("markupCadeiraPercent"),
+      MESA: document.getElementById("markupMesaPercent")
+    };
+    const maxDescInputs = {
+      POLTRONA: document.getElementById("maxDescontoPoltronaPercent"),
+      CADEIRA: document.getElementById("maxDescontoCadeiraPercent"),
+      MESA: document.getElementById("maxDescontoMesaPercent")
+    };
     const descontoInput = document.getElementById("descontoPercent");
 
     const adminConfigDiv = document.getElementById("adminConfig");
@@ -1028,6 +1059,17 @@
     const STORAGE_KEY_MARKUP = "starmobile_markup_percent";
     const STORAGE_KEY_MAX_DESC = "starmobile_max_desconto_percent";
     const STORAGE_KEY_BUSCAS = "starmobile_buscas";
+    const STORAGE_KEYS_MARKUP_POR_CATEGORIA = {
+      POLTRONA: "starmobile_markup_poltrona_percent",
+      CADEIRA: "starmobile_markup_cadeira_percent",
+      MESA: "starmobile_markup_mesa_percent"
+    };
+    const STORAGE_KEYS_MAX_DESC_POR_CATEGORIA = {
+      POLTRONA: "starmobile_max_desconto_poltrona_percent",
+      CADEIRA: "starmobile_max_desconto_cadeira_percent",
+      MESA: "starmobile_max_desconto_mesa_percent"
+    };
+    const CATEGORIAS_CONFIG = ["POLTRONA", "CADEIRA", "MESA"];
 
     const SENHA_GERENTE = "STAR2025";
     const CREDENCIAIS_ADMIN = { login: "admin", senha: "$tarmobile2025", nome: "Starmobile" };
@@ -1068,6 +1110,15 @@
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .trim();
+    }
+
+        function obterCategoriaPrincipal(produto = {}) {
+      const texto = normalizar(produto.chaves || (produto._campos || [])[0] || "");
+      const primeira = texto.split(/\s+/).find(Boolean) || "";
+      if (primeira === "POLTRONA") return "POLTRONA";
+      if (primeira === "CADEIRA") return "CADEIRA";
+      if (primeira === "MESA") return "MESA";
+      return "";
     }
 
         function extrairAgrupamentoPrincipal(descricao = "", codigo = "") {
@@ -1185,16 +1236,42 @@
       return lower;
     }
 
-    function carregarConfigNosInputs() {
-      const ipi = parseFloat(localStorage.getItem(STORAGE_KEY_IPI));
-      const frete = parseFloat(localStorage.getItem(STORAGE_KEY_FRETE));
-      const markup = parseFloat(localStorage.getItem(STORAGE_KEY_MARKUP));
-      const maxDesc = parseFloat(localStorage.getItem(STORAGE_KEY_MAX_DESC));
+    function lerPercentual(key) {
+      const valor = parseFloat(localStorage.getItem(key));
+      return isNaN(valor) ? null : valor;
+    }
 
-      if (!isNaN(ipi)) ipiInput.value = ipi.toString();
-      if (!isNaN(frete)) freteInput.value = frete.toString();
-      if (!isNaN(markup)) markupInput.value = markup.toString();
-      if (!isNaN(maxDesc)) maxDescInput.value = maxDesc.toString();
+    function obterConfigPorCategoria() {
+      const markupGlobal = lerPercentual(STORAGE_KEY_MARKUP);
+      const maxDescGlobal = lerPercentual(STORAGE_KEY_MAX_DESC);
+
+      const config = {};
+      CATEGORIAS_CONFIG.forEach(cat => {
+        const markupCat = lerPercentual(STORAGE_KEYS_MARKUP_POR_CATEGORIA[cat]);
+        const maxDescCat = lerPercentual(STORAGE_KEYS_MAX_DESC_POR_CATEGORIA[cat]);
+        config[cat] = {
+          markup: markupCat != null ? markupCat : markupGlobal ?? 0,
+          maxDesc: maxDescCat != null ? maxDescCat : maxDescGlobal ?? 0
+        };
+      });
+
+      return config;
+    }
+
+    function carregarConfigNosInputs() {
+      const ipi = lerPercentual(STORAGE_KEY_IPI);
+      const frete = lerPercentual(STORAGE_KEY_FRETE);
+
+      if (ipi != null) ipiInput.value = ipi.toString();
+      if (frete != null) freteInput.value = frete.toString();
+
+      const configPorCategoria = obterConfigPorCategoria();
+      CATEGORIAS_CONFIG.forEach(cat => {
+        const markup = configPorCategoria[cat]?.markup ?? 0;
+        const maxDesc = configPorCategoria[cat]?.maxDesc ?? 0;
+        if (markupInputs[cat]) markupInputs[cat].value = markup.toString();
+        if (maxDescInputs[cat]) maxDescInputs[cat].value = maxDesc.toString();
+      });
     }
 
     function obterPercentual(valorStr) {
@@ -1204,42 +1281,38 @@
     }
 
     function obterConfigAtual() {
-      const ipiStored = parseFloat(localStorage.getItem(STORAGE_KEY_IPI));
-      const freteStored = parseFloat(localStorage.getItem(STORAGE_KEY_FRETE));
-      const markupStored = parseFloat(localStorage.getItem(STORAGE_KEY_MARKUP));
-      const maxDescStored = parseFloat(localStorage.getItem(STORAGE_KEY_MAX_DESC));
+      const ipi = lerPercentual(STORAGE_KEY_IPI) ?? 0;
+      const frete = lerPercentual(STORAGE_KEY_FRETE) ?? 0;
+      const categorias = obterConfigPorCategoria();
 
-      const ipi = !isNaN(ipiStored) ? ipiStored : 0;
-      const frete = !isNaN(freteStored) ? freteStored : 0;
-      const markup = !isNaN(markupStored) ? markupStored : 0;
-      const maxDesc = !isNaN(maxDescStored) ? maxDescStored : 0;
-
-      return { ipi, frete, markup, maxDesc };
+      return { ipi, frete, categorias };
     }
 
-    function calcularFatoresEDesconto() {
-      const { ipi, frete, markup, maxDesc } = obterConfigAtual();
-      const fatorIPI = 1 + (ipi / 100);
-      const fatorFrete = 1 + (frete / 100);
-      const fatorMarkup = 1 + (markup / 100);
+    function calcularFatoresEDesconto(categoria = "", baseConfig) {
+      const config = baseConfig || obterConfigAtual();
+      const cfgCategoria = config.categorias[categoria] || { markup: 0, maxDesc: 0 };
+
+      const fatorIPI = 1 + (config.ipi / 100);
+      const fatorFrete = 1 + (config.frete / 100);
+      const fatorMarkup = 1 + (cfgCategoria.markup / 100);
 
       let descontoDigitado = obterPercentual(descontoInput.value);
       let descontoAplicado = descontoDigitado;
 
-      if (!isAdmin && descontoDigitado > maxDesc) {
-        descontoAplicado = maxDesc;
+      if (!isAdmin && descontoDigitado > cfgCategoria.maxDesc) {
+        descontoAplicado = cfgCategoria.maxDesc;
       }
 
       const fatorDesconto = 1 - (descontoAplicado / 100);
 
       let avisoDesconto = "";
-      if (!isAdmin && descontoDigitado > maxDesc && maxDesc > 0) {
-        avisoDesconto = `Desconto limitado a ${maxDesc.toFixed(2)}% pela gerência.`;
-      } else if (!isAdmin && descontoDigitado > 0 && maxDesc === 0) {
+      if (!isAdmin && descontoDigitado > cfgCategoria.maxDesc && cfgCategoria.maxDesc > 0) {
+        avisoDesconto = `Desconto limitado a ${cfgCategoria.maxDesc.toFixed(2)}% pela gerência.`;
+      } else if (!isAdmin && descontoDigitado > 0 && cfgCategoria.maxDesc === 0) {
         avisoDesconto = `Nenhum desconto autorizado pela gerência.`;
       }
 
-      return { ipi, frete, markup, maxDesc, fatorIPI, fatorFrete, fatorMarkup, descontoAplicado, fatorDesconto, avisoDesconto };
+      return { ipi: config.ipi, frete: config.frete, markup: cfgCategoria.markup, maxDesc: cfgCategoria.maxDesc, fatorIPI, fatorFrete, fatorMarkup, descontoAplicado, fatorDesconto, avisoDesconto };
     }
 
     function calcularValoresProduto(produto, fatores) {
@@ -1278,7 +1351,7 @@
       if (campoBusca.value.trim()) {
         buscarProduto(campoBusca.value);
       } else if (modoOrcamento) {
-        resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
+        resultadoDiv.innerHTML = renderizarResumoOrcamento(obterConfigAtual());
       } else {
         resultadoDiv.innerHTML = "";
       }
@@ -1704,7 +1777,7 @@
       if (campoBusca.value.trim()) {
         buscarProduto(campoBusca.value);
       } else {
-        resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
+        resultadoDiv.innerHTML = renderizarResumoOrcamento(obterConfigAtual());
       }
 
       alert("Orçamento carregado. Atualize quantidades ou adicione novos itens e salve novamente.");
@@ -1887,7 +1960,7 @@
       let termoOriginal = String(termoBruto || "").trim();
       if (!termoOriginal) {
         statusSpan.textContent = "Informe um código ou termo para busca.";
-        resultadoDiv.innerHTML = modoOrcamento ? renderizarResumoOrcamento(calcularFatoresEDesconto()) : "";
+        resultadoDiv.innerHTML = modoOrcamento ? renderizarResumoOrcamento(obterConfigAtual()) : "";
         return;
       }
 
@@ -1966,7 +2039,7 @@
 
       if (!matches || matches.length === 0) {
         statusSpan.textContent = "Produto não encontrado para: " + termoOriginal;
-        resultadoDiv.innerHTML = modoOrcamento ? renderizarResumoOrcamento(calcularFatoresEDesconto()) : "";
+        resultadoDiv.innerHTML = modoOrcamento ? renderizarResumoOrcamento(obterConfigAtual()) : "";
         return;
       }
 
@@ -1980,7 +2053,8 @@
         statusSpan.textContent = matches.length + " produtos encontrados";
       }
 
-      const fatores = calcularFatoresEDesconto();
+      const configBase = obterConfigAtual();
+      const avisosDesconto = new Set();
 
       let html = "";
       if (matches.length > 1) {
@@ -1988,6 +2062,12 @@
       }
 
       matches.forEach((p) => {
+        const categoriaProduto = obterCategoriaPrincipal(p);
+        const fatores = calcularFatoresEDesconto(categoriaProduto, configBase);
+        if (fatores.avisoDesconto) {
+          const prefixo = categoriaProduto ? `${categoriaProduto}: ` : "";
+          avisosDesconto.add(prefixo + fatores.avisoDesconto);
+        }
         const valores = calcularValoresProduto(p, fatores);
         const id = p._id;
 
@@ -2042,18 +2122,20 @@
         html += `</div>`; // item
       });
 
-      if (fatores.avisoDesconto) {
-        html = `<div class="preco-sec">${fatores.avisoDesconto}</div>` + html;
+      if (avisosDesconto.size > 0) {
+        const avisos = Array.from(avisosDesconto).join("<br>");
+        html = `<div class="preco-sec">${avisos}</div>` + html;
       }
 
       if (modoOrcamento) {
-        html += renderizarResumoOrcamento(fatores);
+        html += renderizarResumoOrcamento(configBase);
       }
 
       resultadoDiv.innerHTML = html;
     }
 
-    function renderizarResumoOrcamento(fatores) {
+    function renderizarResumoOrcamento(configBase) {
+      const config = configBase || obterConfigAtual();
       const ids = Object.keys(orcamento);
       if (!modoOrcamento) return "";
       if (ids.length === 0) {
@@ -2069,6 +2151,8 @@
         const item = orcamento[id];
         const p = produtos.find(pp => String(pp._id) === String(id));
         if (!p || p.preco_lista == null) return;
+        const categoriaProduto = obterCategoriaPrincipal(p);
+        const fatores = calcularFatoresEDesconto(categoriaProduto, config);
         const valores = calcularValoresProduto(p, fatores);
         const qtd = item.quantidade || 1;
         const subtotal = valores.valorFinal * qtd;
@@ -2384,7 +2468,8 @@
       </div>`;
     }
 
-    function gerarDadosOrcamento(fatores) {
+    function gerarDadosOrcamento(configBase) {
+      const config = configBase || obterConfigAtual();
       const ids = Object.keys(orcamento);
       if (ids.length === 0) {
         return { texto: "Orçamento vazio.", total: 0 };
@@ -2407,6 +2492,8 @@
         const item = orcamento[id];
         const p = produtos.find(pp => String(pp._id) === String(id));
         if (!p || p.preco_lista == null) return;
+        const categoriaProduto = obterCategoriaPrincipal(p);
+        const fatores = calcularFatoresEDesconto(categoriaProduto, config);
         const valores = calcularValoresProduto(p, fatores);
         const qtd = item.quantidade || 1;
         const subtotal = valores.valorFinal * qtd;
@@ -2422,11 +2509,12 @@
       return { texto: linhas.join("\n\n"), total };
     }
 
-    function gerarTextoOrcamento(fatores) {
-      return gerarDadosOrcamento(fatores).texto;
+    function gerarTextoOrcamento(configBase) {
+      return gerarDadosOrcamento(configBase).texto;
     }
 
-    function gerarHtmlImpressao(fatores) {
+    function gerarHtmlImpressao(configBase) {
+      const config = configBase || obterConfigAtual();
       const ids = Object.keys(orcamento);
       if (ids.length === 0) {
         return `<div class="preco-sec">Nenhum item incluído no orçamento atual.</div>`;
@@ -2439,6 +2527,8 @@
         const item = orcamento[id];
         const p = produtos.find(pp => String(pp._id) === String(id));
         if (!p || p.preco_lista == null) return;
+        const categoriaProduto = obterCategoriaPrincipal(p);
+        const fatores = calcularFatoresEDesconto(categoriaProduto, config);
         const valores = calcularValoresProduto(p, fatores);
         const qtd = item.quantidade || 1;
         const subtotal = valores.valorFinal * qtd;
@@ -2491,7 +2581,7 @@
       campoBusca.value = "";
       statusSpan.textContent = "";
       if (modoOrcamento) {
-        resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
+        resultadoDiv.innerHTML = renderizarResumoOrcamento(obterConfigAtual());
       } else {
         resultadoDiv.innerHTML = "";
       }
@@ -2499,7 +2589,7 @@
 
     descontoInput.addEventListener("change", () => {
       if (campoBusca.value.trim()) buscarProduto(campoBusca.value);
-      else if (modoOrcamento) resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
+      else if (modoOrcamento) resultadoDiv.innerHTML = renderizarResumoOrcamento(obterConfigAtual());
     });
 
     btnToggleAdmin.addEventListener("click", () => {
@@ -2523,7 +2613,7 @@
       if (campoBusca.value.trim()) {
         buscarProduto(campoBusca.value);
       } else if (modoOrcamento) {
-        resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
+        resultadoDiv.innerHTML = renderizarResumoOrcamento(obterConfigAtual());
       }
     });
 
@@ -2536,21 +2626,23 @@
       if (!isAdmin) return;
       const ipiVal = obterPercentual(ipiInput.value);
       const freteVal = obterPercentual(freteInput.value);
-      const markupVal = obterPercentual(markupInput.value);
-      const maxDescVal = obterPercentual(maxDescInput.value);
 
       localStorage.setItem(STORAGE_KEY_IPI, String(ipiVal));
       localStorage.setItem(STORAGE_KEY_FRETE, String(freteVal));
-      localStorage.setItem(STORAGE_KEY_MARKUP, String(markupVal));
-      localStorage.setItem(STORAGE_KEY_MAX_DESC, String(maxDescVal));
+      CATEGORIAS_CONFIG.forEach(cat => {
+        const markupVal = obterPercentual(markupInputs[cat]?.value);
+        const maxDescVal = obterPercentual(maxDescInputs[cat]?.value);
+        localStorage.setItem(STORAGE_KEYS_MARKUP_POR_CATEGORIA[cat], String(markupVal));
+        localStorage.setItem(STORAGE_KEYS_MAX_DESC_POR_CATEGORIA[cat], String(maxDescVal));
+      });
 
       carregarConfigNosInputs();
 
-      statusSpan.textContent = "Configurações de IPI, frete, markup e desconto máximo salvas.";
+      statusSpan.textContent = "Configurações de IPI, frete, markup e desconto máximo por categoria salvas.";
       if (campoBusca.value.trim()) {
         buscarProduto(campoBusca.value);
       } else if (modoOrcamento) {
-        resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
+        resultadoDiv.innerHTML = renderizarResumoOrcamento(obterConfigAtual());
       }
     });
 
@@ -2611,7 +2703,7 @@
         if (campoBusca.value.trim()) {
           buscarProduto(campoBusca.value);
         } else {
-          resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
+          resultadoDiv.innerHTML = renderizarResumoOrcamento(obterConfigAtual());
         }
       }
 
@@ -2648,7 +2740,7 @@
         if (campoBusca.value.trim()) {
           buscarProduto(campoBusca.value);
         } else {
-          resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
+          resultadoDiv.innerHTML = renderizarResumoOrcamento(obterConfigAtual());
         }
       }
     });
@@ -2668,7 +2760,7 @@
         if (campoBusca.value.trim()) {
           buscarProduto(campoBusca.value);
         } else {
-          resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
+          resultadoDiv.innerHTML = renderizarResumoOrcamento(obterConfigAtual());
         }
         return;
       }
@@ -2684,13 +2776,13 @@
         if (campoBusca.value.trim()) {
           buscarProduto(campoBusca.value);
         } else {
-          resultadoDiv.innerHTML = renderizarResumoOrcamento(calcularFatoresEDesconto());
+          resultadoDiv.innerHTML = renderizarResumoOrcamento(obterConfigAtual());
         }
       }
 
       if (target.id === "btnCopiarOrcamento") {
-        const fatores = calcularFatoresEDesconto();
-        const texto = gerarTextoOrcamento(fatores);
+        const configBase = obterConfigAtual();
+        const texto = gerarTextoOrcamento(configBase);
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(texto).then(() => {
             alert("Orçamento copiado para a área de transferência.");
@@ -2707,8 +2799,8 @@
           alert("Entre com um usuário válido para salvar o orçamento.");
           return;
         }
-        const fatores = calcularFatoresEDesconto();
-        const dados = gerarDadosOrcamento(fatores);
+        const configBase = obterConfigAtual();
+        const dados = gerarDadosOrcamento(configBase);
         if (!dados || dados.total === 0) {
           alert("Inclua itens no orçamento antes de salvar.");
           return;
@@ -2766,9 +2858,9 @@
           return;
         }
 
-        const fatores = calcularFatoresEDesconto();
+        const configBase = obterConfigAtual();
         if (orcamentoPrintDiv) {
-          orcamentoPrintDiv.innerHTML = gerarHtmlImpressao(fatores);
+          orcamentoPrintDiv.innerHTML = gerarHtmlImpressao(configBase);
         }
         window.print();
       }
