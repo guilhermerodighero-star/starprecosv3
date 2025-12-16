@@ -1696,53 +1696,105 @@
       limparConsultoresForm();
     }
 
-    function renderizarOrcamentosSalvos() {
-      if (!orcamentosSalvosLista) return;
-      let visiveis = [];
-      if (!usuarioLogado) {
-        orcamentosSalvosLista.innerHTML = "Entre para visualizar orçamentos salvos.";
-        return;
+      function renderizarOrcamentosSalvos() {
+        if (!orcamentosSalvosLista) return;
+        let visiveis = [];
+        if (!usuarioLogado) {
+          orcamentosSalvosLista.innerHTML = "Entre para visualizar orçamentos salvos.";
+          return;
+        }
+
+        visiveis = orcamentosSalvos.filter(orc => {
+          if (usuarioLogado.role === "admin") return true;
+          if (usuarioLogado.role === "representante") {
+            return orc.representanteId && orc.representanteId === usuarioLogado.representanteId;
+          }
+          if (usuarioLogado.role === "gerente") {
+            return orc.lojaId && orc.lojaId === usuarioLogado.lojaId;
+          }
+          if (usuarioLogado.role === "consultor") {
+            return orc.consultorLogin && orc.consultorLogin === usuarioLogado.login;
+          }
+          return false;
+        });
+
+        if (!visiveis.length) {
+          orcamentosSalvosLista.innerHTML = "Nenhum orçamento salvo para este acesso.";
+          return;
+        }
+
+        const agora = Date.now();
+        const MS_DIA = 24 * 60 * 60 * 1000;
+        const LIMITE_DIAS = 5;
+        const gruposRecentes = [];
+        const grupoAntigo = { titulo: "Orçamentos antigos", lista: [] };
+
+        const ordenados = [...visiveis].sort((a, b) => (b.criadoEm || 0) - (a.criadoEm || 0));
+        ordenados.forEach(orc => {
+          const criado = typeof orc.criadoEm === "number" ? orc.criadoEm : Date.parse(orc.criadoEm);
+          const dataBase = isNaN(criado) ? agora : criado;
+          const diffDias = Math.floor((agora - dataBase) / MS_DIA);
+
+          if (diffDias < LIMITE_DIAS) {
+            const dataObj = new Date(dataBase);
+            const chave = dataObj.toISOString().slice(0, 10);
+            let grupo = gruposRecentes.find(g => g.chave === chave);
+            if (!grupo) {
+              grupo = {
+                chave,
+                titulo: `Orçamentos de ${dataObj.toLocaleDateString()}`,
+                lista: [],
+                aberto: gruposRecentes.length === 0,
+              };
+              gruposRecentes.push(grupo);
+            }
+            grupo.lista.push(orc);
+          } else {
+            grupoAntigo.lista.push(orc);
+          }
+        });
+
+        const gruposParaRenderizar = [...gruposRecentes];
+        if (grupoAntigo.lista.length) {
+          const dataLimite = new Date(agora - LIMITE_DIAS * MS_DIA).toLocaleDateString();
+          grupoAntigo.titulo = `Orçamentos antigos (anteriores a ${dataLimite})`;
+          gruposParaRenderizar.push(grupoAntigo);
+        }
+
+        orcamentosSalvosLista.innerHTML = "";
+        gruposParaRenderizar.forEach(grupo => {
+          const details = document.createElement("details");
+          details.style.marginBottom = "12px";
+          if (grupo.aberto) details.open = true;
+
+          const resumo = document.createElement("summary");
+          resumo.textContent = `${grupo.titulo} • ${grupo.lista.length} item(ns)`;
+          resumo.style.cursor = "pointer";
+          resumo.style.fontWeight = "600";
+          details.appendChild(resumo);
+
+          grupo.lista.forEach(orc => {
+            const div = document.createElement("div");
+            div.className = "list-card";
+            const data = new Date(orc.criadoEm);
+            const lojaInfo = orc.lojaNome ? ` • Loja: ${orc.lojaNome}` : "";
+            const botaoEditar = orc.itens && Object.keys(orc.itens).length
+              ? `<button type="button" class="btn-editar-orcamento" data-orcamento-id="${orc.id}">✏️ Editar orçamento</button>`
+              : "";
+            const botaoExcluir = `<button type="button" class="btn-excluir-orcamento" data-orcamento-id="${orc.id}">🗑️ Excluir</button>`;
+            div.innerHTML = `
+              <div><strong>${orc.titulo}</strong></div>
+              <div class="muted">${data.toLocaleString()} • Criado por ${orc.criadorNome}${lojaInfo}</div>
+              <div class="muted">Total: R$ ${formatarPreco(orc.total)}</div>
+              <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;">${botaoEditar}${botaoExcluir}</div>
+              <details style="margin-top:4px;"><summary>Ver detalhes</summary><pre style="white-space:pre-wrap; font-size:11px;">${orc.texto}</pre></details>
+            `;
+            details.appendChild(div);
+          });
+
+          orcamentosSalvosLista.appendChild(details);
+        });
       }
-
-      visiveis = orcamentosSalvos.filter(orc => {
-        if (usuarioLogado.role === "admin") return true;
-        if (usuarioLogado.role === "representante") {
-          return orc.representanteId && orc.representanteId === usuarioLogado.representanteId;
-        }
-        if (usuarioLogado.role === "gerente") {
-          return orc.lojaId && orc.lojaId === usuarioLogado.lojaId;
-        }
-        if (usuarioLogado.role === "consultor") {
-          return orc.consultorLogin && orc.consultorLogin === usuarioLogado.login;
-        }
-        return false;
-      });
-
-      if (!visiveis.length) {
-        orcamentosSalvosLista.innerHTML = "Nenhum orçamento salvo para este acesso.";
-        return;
-      }
-
-      orcamentosSalvosLista.innerHTML = "";
-      visiveis.forEach(orc => {
-        const div = document.createElement("div");
-        div.className = "list-card";
-        const data = new Date(orc.criadoEm);
-        const lojaInfo = orc.lojaNome ? ` • Loja: ${orc.lojaNome}` : "";
-        const botaoEditar = orc.itens && Object.keys(orc.itens).length
-          ? `<button type="button" class="btn-editar-orcamento" data-orcamento-id="${orc.id}">✏️ Editar orçamento</button>`
-          : "";
-        const botaoExcluir = `<button type="button" class="btn-excluir-orcamento" data-orcamento-id="${orc.id}">🗑️ Excluir</button>`;
-        div.innerHTML = `
-          <div><strong>${orc.titulo}</strong></div>
-          <div class="muted">${data.toLocaleString()} • Criado por ${orc.criadorNome}${lojaInfo}</div>
-          <div class="muted">Total: R$ ${formatarPreco(orc.total)}</div>
-          <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;">${botaoEditar}${botaoExcluir}</div>
-          <details style="margin-top:4px;"><summary>Ver detalhes</summary><pre style="white-space:pre-wrap; font-size:11px;">${orc.texto}</pre></details>
-        `;
-        orcamentosSalvosLista.appendChild(div);
-      });
-    }
 
         function carregarOrcamentoParaEdicao(registro) {
       if (!registro || !registro.itens || !Object.keys(registro.itens).length) {
