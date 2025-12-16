@@ -669,6 +669,20 @@
               <label for="maxDescontoMesaPercent">Desconto máximo consultor (%):</label>
               <input id="maxDescontoMesaPercent" type="number" step="0.01" placeholder="ex.: 10" />
             </div>
+              <div class="stack" style="min-width:220px;">
+              <div class="muted"><strong>Banquetas</strong></div>
+              <label for="markupBanquetaPercent">Markup (%):</label>
+              <input id="markupBanquetaPercent" type="number" step="0.01" placeholder="ex.: 10" />
+              <label for="maxDescontoBanquetaPercent">Desconto máximo consultor (%):</label>
+              <input id="maxDescontoBanquetaPercent" type="number" step="0.01" placeholder="ex.: 10" />
+            </div>
+            <div class="stack" style="min-width:220px;">
+              <div class="muted"><strong>Complementos</strong></div>
+              <label for="markupComplementoPercent">Markup (%):</label>
+              <input id="markupComplementoPercent" type="number" step="0.01" placeholder="ex.: 10" />
+              <label for="maxDescontoComplementoPercent">Desconto máximo consultor (%):</label>
+              <input id="maxDescontoComplementoPercent" type="number" step="0.01" placeholder="ex.: 10" />
+            </div>
             <div class="stack" style="min-width:220px; gap:12px;">
               <div class="muted">Esses percentuais incidem apenas na categoria correspondente, considerando a primeira palavra da descrição do produto.</div>
               <button id="btnSalvarConfig">💾 Salvar</button>
@@ -989,12 +1003,16 @@
     const markupInputs = {
       POLTRONA: document.getElementById("markupPoltronaPercent"),
       CADEIRA: document.getElementById("markupCadeiraPercent"),
-      MESA: document.getElementById("markupMesaPercent")
+      MESA: document.getElementById("markupMesaPercent"),
+      BANQUETA: document.getElementById("markupBanquetaPercent"),
+      COMPLEMENTO: document.getElementById("markupComplementoPercent")
     };
     const maxDescInputs = {
       POLTRONA: document.getElementById("maxDescontoPoltronaPercent"),
       CADEIRA: document.getElementById("maxDescontoCadeiraPercent"),
-      MESA: document.getElementById("maxDescontoMesaPercent")
+      MESA: document.getElementById("maxDescontoMesaPercent"),
+      BANQUETA: document.getElementById("maxDescontoBanquetaPercent"),
+      COMPLEMENTO: document.getElementById("maxDescontoComplementoPercent")
     };
     const descontoInput = document.getElementById("descontoPercent");
 
@@ -1066,14 +1084,18 @@
     const STORAGE_KEYS_MARKUP_POR_CATEGORIA = {
       POLTRONA: "starmobile_markup_poltrona_percent",
       CADEIRA: "starmobile_markup_cadeira_percent",
-      MESA: "starmobile_markup_mesa_percent"
+      MESA: "starmobile_markup_mesa_percent",
+      BANQUETA: "starmobile_markup_banqueta_percent",
+      COMPLEMENTO: "starmobile_markup_complemento_percent"
     };
     const STORAGE_KEYS_MAX_DESC_POR_CATEGORIA = {
       POLTRONA: "starmobile_max_desconto_poltrona_percent",
       CADEIRA: "starmobile_max_desconto_cadeira_percent",
-      MESA: "starmobile_max_desconto_mesa_percent"
+      MESA: "starmobile_max_desconto_mesa_percent",
+      BANQUETA: "starmobile_max_desconto_banqueta_percent",
+      COMPLEMENTO: "starmobile_max_desconto_complemento_percent"
     };
-    const CATEGORIAS_CONFIG = ["POLTRONA", "CADEIRA", "MESA"];
+    const CATEGORIAS_CONFIG = ["POLTRONA", "CADEIRA", "MESA", "BANQUETA", "COMPLEMENTO"];
 
     const SENHA_GERENTE = "STAR2025";
     const CREDENCIAIS_ADMIN = { login: "admin", senha: "$tarmobile2025", nome: "Starmobile" };
