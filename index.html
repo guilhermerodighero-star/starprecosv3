@@ -480,38 +480,62 @@
       box-shadow: 0 10px 30px rgba(0,0,0,0.4);
     }
 
+        /* Área exclusiva de impressão */
+    #orcamentoPrint {
+      display: none;
+      padding: 16px;
+      color: #111;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    .orcamento-print-header {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 8px 16px;
+      margin: 8px 0 16px;
+      font-size: 13px;
+    }
+    .orcamento-print-section-title {
+      margin: 0 0 6px;
+      font-size: 15px;
+    }
+    .orcamento-print-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 0;
+      border-top: 1px solid #eee;
+      font-size: 13px;
+    }
+    .orcamento-print-item:first-child {
+      border-top: none;
+    }
+    .orcamento-print-item strong {
+      display: block;
+      margin-bottom: 2px;
+    }
+    .orcamento-print-total {
+      font-weight: 700;
+      font-size: 15px;
+      margin-top: 12px;
+      text-align: right;
+    }
+
     @media print {
-      header,
-      .controls,
-      .controls-row,
-      #adminConfig,
-      #status,
-      #btnFalar,
-      #btnBuscar,
-      #btnLimparBusca,
-      .category-filters {
-        display: none !important;
-      }
-      /* Esconde os cards de resultado da busca (parte em vermelho do print) */
-      #resultado .item {
-        display: none !important;
-      }
       body {
         background: #fff;
       }
-      .card {
-        box-shadow: none;
-        border-radius: 0;
+      header,
+      main,
+      footer,
+      #imageModal,
+      #orcamentosSalvosLista,
+      #resultado,
+      #status {
+      display: none !important;
       }
-      .orcamento-panel {
-        border-top: none;
-        margin-top: 0;
-      }
-      .orcamento-acoes {
-        display: none !important;
-      }
-      #imageModal {
-        display: none !important;
+      #orcamentoPrint {
+        display: block !important;
       }
     }
   </style>
@@ -682,6 +706,8 @@
       <div id="resultado"></div>
     </div>
   </main>
+
+  <div id="orcamentoPrint"></div>
 
   <footer>
     Consulta interna de preços • Starmobile Design
@@ -942,6 +968,7 @@
     const btnToggleOrcamento = document.getElementById("btnToggleOrcamento");
     const orcamentoBadge = document.getElementById("orcamentoBadge");
     const orcamentoHeaderDiv = document.getElementById("orcamentoHeader");
+    const orcamentoPrintDiv = document.getElementById("orcamentoPrint");
     const usuarioResumo = document.getElementById("usuarioResumo");
 
     const loginUsuarioInput = document.getElementById("loginUsuario");
@@ -2342,6 +2369,56 @@
       return gerarDadosOrcamento(fatores).texto;
     }
 
+    function gerarHtmlImpressao(fatores) {
+      const ids = Object.keys(orcamento);
+      if (ids.length === 0) {
+        return `<div class="preco-sec">Nenhum item incluído no orçamento atual.</div>`;
+      }
+
+      let total = 0;
+      let itensHtml = "";
+
+      ids.forEach(id => {
+        const item = orcamento[id];
+        const p = produtos.find(pp => String(pp._id) === String(id));
+        if (!p || p.preco_lista == null) return;
+        const valores = calcularValoresProduto(p, fatores);
+        const qtd = item.quantidade || 1;
+        const subtotal = valores.valorFinal * qtd;
+        total += subtotal;
+        const desc = p.chaves || "";
+
+        itensHtml += `<div class="orcamento-print-item">
+          <div>
+            <strong>${p.codigo}</strong>
+            <div>${desc}</div>
+          </div>
+          <div style="text-align:right;">
+            <div>R$ ${formatarPreco(valores.valorFinal)} x ${qtd}</div>
+            <div><strong>R$ ${formatarPreco(subtotal)}</strong></div>
+          </div>
+        </div>`;
+      });
+
+      const cliente = orcClienteInput.value.trim() || "-";
+      const telefone = orcTelefoneInput.value.trim() || "-";
+      const vendedor = orcVendedorInput.value.trim() || "-";
+      const validade = orcValidadeInput.value.trim() || "7 dias";
+
+      return `<div>
+        <h2 style="margin-bottom:4px;">Orçamento</h2>
+        <div class="orcamento-print-header">
+          <div><strong>Cliente:</strong> ${cliente}</div>
+          <div><strong>Telefone:</strong> ${telefone}</div>
+          <div><strong>Vendedor:</strong> ${vendedor}</div>
+          <div><strong>Validade:</strong> ${validade}</div>
+        </div>
+        <h3 class="orcamento-print-section-title">Itens do orçamento</h3>
+        ${itensHtml || `<div class="preco-sec">Nenhum item válido para imprimir.</div>`}
+        <div class="orcamento-print-total">Total: R$ ${formatarPreco(total)}</div>
+      </div>`;
+    }
+
     btnBuscar.addEventListener("click", () => {
       buscarProduto(campoBusca.value, true);
     });
@@ -2626,6 +2703,16 @@
       }
 
       if (target.id === "btnImprimirOrcamento") {
+              const ids = Object.keys(orcamento);
+        if (ids.length === 0) {
+          alert("Inclua itens no orçamento antes de imprimir.");
+          return;
+        }
+
+        const fatores = calcularFatoresEDesconto();
+        if (orcamentoPrintDiv) {
+          orcamentoPrintDiv.innerHTML = gerarHtmlImpressao(fatores);
+        }
         window.print();
       }
     });
