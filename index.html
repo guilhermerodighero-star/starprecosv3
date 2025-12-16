@@ -593,6 +593,11 @@
             <input id="repSenha" type="password" placeholder="Senha" />
             <button id="btnCadastrarRep">➕ Cadastrar representante</button>
           </div>
+                    <div class="list-card stack">
+            <strong>Gerenciar representantes</strong>
+            <div class="muted">Exclua uma representante para remover também lojas e orçamentos vinculados.</div>
+            <div id="listaRepresentantes" class="stack"></div>
+          </div>
           <div class="list-card stack">
             <strong>Cadastro de loja</strong>
             <input id="lojaNome" type="text" placeholder="Nome da Loja" />
@@ -981,6 +986,7 @@
     const buscaCard = document.getElementById("buscaCard");
     const orcamentosSalvosLista = document.getElementById("orcamentosSalvosLista");
     const resumoCadastrosDiv = document.getElementById("resumoCadastros");
+    const listaRepresentantes = document.getElementById("listaRepresentantes");
     const dashboardBuscas = document.getElementById("dashboardBuscas");
     const dashboardBuscasCard = document.getElementById("dashboardBuscasCard");
     const dashboardBuscasResumo = document.getElementById("dashboardBuscasResumo");
@@ -1353,14 +1359,65 @@
       } else {
         dadosSistema.representantes.forEach(rep => {
           const lojas = dadosSistema.lojas.filter(l => l.representanteId === rep.id);
-          html += `<div><strong>${rep.nome}</strong> (${rep.login}) – ${lojas.length} loja(s)</div>`;
+          html += `<div class="list-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+              <div><strong>${rep.nome}</strong> (${rep.login}) – ${lojas.length} loja(s)</div>
+              <button type="button" class="btn-excluir-rep" data-rep-id="${rep.id}">🗑️ Excluir representante</button>
+            </div>`;
           lojas.forEach(loja => {
             const lojaLink = `<button class="loja-link" data-loja-id="${loja.id}" title="Editar loja">${loja.nome}</button>`;
             html += `<div class="muted" style="padding-left:10px;">🏬 ${lojaLink} – gerente: ${loja.gerente.login}, consultores: ${loja.consultores.length}</div>`;
           });
+          html += `</div>`;
         });
       }
       resumoCadastrosDiv.innerHTML = html;
+      
+      if (listaRepresentantes) {
+        listaRepresentantes.innerHTML = html;
+      }
+    }
+
+    function excluirRepresentante(repId) {
+      const rep = dadosSistema.representantes.find(r => r.id === repId);
+      if (!rep) {
+        alert("Não foi possível localizar esta representante.");
+        return;
+      }
+
+      const lojasVinculadas = dadosSistema.lojas.filter(l => l.representanteId === repId);
+      const lojaIds = lojasVinculadas.map(l => l.id);
+      const orcamentosRelacionados = orcamentosSalvos.filter(o => o.representanteId === repId || (o.lojaId && lojaIds.includes(o.lojaId)));
+
+      const confirmar = confirm(`Excluir representante "${rep.nome}"? Isso removerá ${lojasVinculadas.length} loja(s) e ${orcamentosRelacionados.length} orçamento(s) vinculados.`);
+      if (!confirmar) return;
+
+      dadosSistema.representantes = dadosSistema.representantes.filter(r => r.id !== repId);
+      dadosSistema.lojas = dadosSistema.lojas.filter(l => l.representanteId !== repId);
+      orcamentosSalvos = orcamentosSalvos.filter(o => o.representanteId !== repId && !(o.lojaId && lojaIds.includes(o.lojaId)));
+
+      if (lojaEmEdicaoId && lojaIds.includes(lojaEmEdicaoId)) {
+        limparFormularioLoja();
+      }
+
+      if (usuarioLogado) {
+        const usuarioAfetado =
+          (usuarioLogado.role === "representante" && usuarioLogado.representanteId === repId) ||
+          ((usuarioLogado.role === "gerente" || usuarioLogado.role === "consultor") && lojaIds.includes(usuarioLogado.lojaId));
+
+        if (usuarioAfetado) {
+          usuarioLogado = null;
+          isAdmin = false;
+          localStorage.removeItem(STORAGE_KEY_ADMIN);
+        }
+      }
+
+      salvarDadosPersistidos();
+      atualizarSelectRepresentantes();
+      renderizarResumoCadastros();
+      renderizarOrcamentosSalvos();
+      atualizarUIAutenticacao();
+      alert("Representante removida juntamente com lojas e orçamentos associados.");
     }
 
         function carregarEstatisticasBusca() {
@@ -2812,18 +2869,30 @@
       }
     });
 
-    resumoCadastrosDiv.addEventListener("click", (event) => {
+    function tratarCliqueRepresentantes(event) {
       const target = event.target;
-      if (target.classList.contains("loja-link")) {
+      const lojaLink = target.closest(".loja-link");
+      if (lojaLink) {
         event.preventDefault();
-        const lojaId = target.dataset.lojaId;
+        const lojaId = lojaLink.dataset.lojaId;
         const loja = dadosSistema.lojas.find(l => l.id === lojaId);
         if (loja) {
           preencherFormularioLoja(loja);
           lojaNomeInput.focus();
         }
       }
-    });
+
+      const btnExcluirRep = target.closest(".btn-excluir-rep");
+      if (btnExcluirRep) {
+        const repId = btnExcluirRep.dataset.repId;
+        excluirRepresentante(repId);
+      }
+    }
+
+    resumoCadastrosDiv.addEventListener("click", tratarCliqueRepresentantes);
+    if (listaRepresentantes) {
+      listaRepresentantes.addEventListener("click", tratarCliqueRepresentantes);
+    }
 
     btnLimparBuscas.addEventListener("click", () => {
       estatisticasBusca = {};
