@@ -2838,7 +2838,7 @@
       atualizarUIAutenticacao();
     }
 
-    btnLogin.addEventListener("click", () => {
+    function tentarLogin() {
       const login = loginUsuarioInput.value.trim();
       const senha = loginSenhaInput.value.trim();
       const autenticado = autenticar(login, senha);
@@ -2850,6 +2850,17 @@
       } else {
         alert("Credenciais inválidas.");
       }
+          }
+
+    btnLogin.addEventListener("click", tentarLogin);
+
+    [loginUsuarioInput, loginSenhaInput].forEach((campo) => {
+      campo.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          tentarLogin();
+        }
+      });
     });
 
     btnLogout.addEventListener("click", () => {
