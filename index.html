@@ -692,6 +692,8 @@
           <button type="button" id="btnCatMesas">Mesas</button>
           <button type="button" id="btnCatCadeiras">Cadeiras</button>
           <button type="button" id="btnCatPoltronas">Poltronas</button>
+          <button type="button" id="btnCatBanquetas">Banquetas</button>
+          <button type="button" id="btnCatComplementos">Complementos</button>
         </div>
       </div>
 
@@ -754,7 +756,7 @@
     // orcamento[id] = { quantidade: number, maxFaixa?: number, temTela?: boolean, temVerniz?: boolean }
     let orcamento = {};
     let usuarioLogado = null;
-    // filtro de categoria: "", "MESA", "CADEIRA", "POLTRONA"
+    // filtro de categoria: "", "MESA", "CADEIRA", "POLTRONA", "BANQUETA", "COMPLEMENTO"
     let categoriaFiltro = "";
 
     // Tecidos por faixa (carregados de tecidos.json)
@@ -1047,6 +1049,8 @@
     const btnCatMesas = document.getElementById("btnCatMesas");
     const btnCatCadeiras = document.getElementById("btnCatCadeiras");
     const btnCatPoltronas = document.getElementById("btnCatPoltronas");
+    const btnCatBanquetas = document.getElementById("btnCatBanquetas");
+    const btnCatComplementos = document.getElementById("btnCatComplementos");
 
     const orcClienteInput = document.getElementById("orcCliente");
     const orcTelefoneInput = document.getElementById("orcTelefone");
@@ -1118,7 +1122,23 @@
       if (primeira === "POLTRONA") return "POLTRONA";
       if (primeira === "CADEIRA") return "CADEIRA";
       if (primeira === "MESA") return "MESA";
+      if (primeira === "BANQUETA" || primeira === "BANQUETAS") return "BANQUETA";
+      if (primeira === "COMPLEMENTO" || primeira === "COMPLEMENTOS") return "COMPLEMENTO";
       return "";
+    }
+
+        function produtoPertenceACategoria(produto, categoria) {
+      const alvo = String(categoria || "").toUpperCase();
+      if (!alvo) return true;
+
+      const principal = obterCategoriaPrincipal(produto);
+      if (principal === alvo) return true;
+      if (principal && principal.endsWith("S") && principal.slice(0, -1) === alvo) return true;
+
+      const tokens = (produto._camposNorm || [])
+        .flatMap(cf => cf.split(/\s+/))
+        .filter(Boolean);
+      return tokens.includes(alvo) || tokens.includes(`${alvo}S`);
     }
 
         function extrairAgrupamentoPrincipal(descricao = "", codigo = "") {
@@ -1876,12 +1896,21 @@
     }
 
     function aplicarFiltroCategoriaUI() {
-      const buttons = [btnCatTodos, btnCatMesas, btnCatCadeiras, btnCatPoltronas];
+      const buttons = [
+        btnCatTodos,
+        btnCatMesas,
+        btnCatCadeiras,
+        btnCatPoltronas,
+        btnCatBanquetas,
+        btnCatComplementos
+      ];
       buttons.forEach(b => b.classList.remove("active"));
       if (!categoriaFiltro) btnCatTodos.classList.add("active");
       else if (categoriaFiltro === "MESA") btnCatMesas.classList.add("active");
       else if (categoriaFiltro === "CADEIRA") btnCatCadeiras.classList.add("active");
       else if (categoriaFiltro === "POLTRONA") btnCatPoltronas.classList.add("active");
+      else if (categoriaFiltro === "BANQUETA") btnCatBanquetas.classList.add("active");
+      else if (categoriaFiltro === "COMPLEMENTO") btnCatComplementos.classList.add("active");
     }
 
     carregarConfigNosInputs();
@@ -2082,11 +2111,9 @@
         });
       }
 
-      // Filtrar por categoria (MESA, CADEIRA, POLTRONA)
+      // Filtrar por categoria (MESA, CADEIRA, POLTRONA, BANQUETA, COMPLEMENTO)
       if (categoriaFiltro) {
-        matches = matches.filter(p =>
-          p._camposNorm.some(cf => cf.split(/\s+/).includes(categoriaFiltro))
-        );
+        matches = matches.filter(p => produtoPertenceACategoria(p, categoriaFiltro));
       }
 
       if (!matches || matches.length === 0) {
@@ -2698,26 +2725,40 @@
       }
     });
 
+        function aplicarFiltroEAtualizarResultados(categoria, forcarBuscaPelaCategoria = false) {
+      categoriaFiltro = categoria || "";
+      aplicarFiltroCategoriaUI();
+
+      const termoAtual = campoBusca.value.trim();
+      const termoBusca = termoAtual || (forcarBuscaPelaCategoria ? categoriaFiltro : "");
+
+      if (termoBusca) {
+        buscarProduto(termoBusca);
+      } else if (modoOrcamento) {
+        resultadoDiv.innerHTML = renderizarResumoOrcamento(obterConfigAtual());
+      } else {
+        resultadoDiv.innerHTML = "";
+      }
+    }
+
     // Filtros de categoria
     btnCatTodos.addEventListener("click", () => {
-      categoriaFiltro = "";
-      aplicarFiltroCategoriaUI();
-      if (campoBusca.value.trim()) buscarProduto(campoBusca.value);
+    aplicarFiltroEAtualizarResultados("", false);
     });
     btnCatMesas.addEventListener("click", () => {
-      categoriaFiltro = "MESA";
-      aplicarFiltroCategoriaUI();
-      if (campoBusca.value.trim()) buscarProduto(campoBusca.value);
+    aplicarFiltroEAtualizarResultados("MESA", true);
     });
     btnCatCadeiras.addEventListener("click", () => {
-      categoriaFiltro = "CADEIRA";
-      aplicarFiltroCategoriaUI();
-      if (campoBusca.value.trim()) buscarProduto(campoBusca.value);
+    aplicarFiltroEAtualizarResultados("CADEIRA", true);
     });
     btnCatPoltronas.addEventListener("click", () => {
-      categoriaFiltro = "POLTRONA";
-      aplicarFiltroCategoriaUI();
-      if (campoBusca.value.trim()) buscarProduto(campoBusca.value);
+      aplicarFiltroEAtualizarResultados("POLTRONA", true);
+    });
+    btnCatBanquetas.addEventListener("click", () => {
+      aplicarFiltroEAtualizarResultados("BANQUETA", true);
+    });
+    btnCatComplementos.addEventListener("click", () => {
+      aplicarFiltroEAtualizarResultados("COMPLEMENTO", true);
     });
 
     resultadoDiv.addEventListener("change", (event) => {
