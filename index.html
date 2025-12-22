@@ -73,12 +73,18 @@
           }
     .categoria-config-grid {
       display: grid;
-      grid-template-columns: repeat(5, minmax(140px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(5, minmax(110px, 1fr));
+      column-gap: 6px;
+      row-gap: 6px;
       align-items: flex-start;
+      margin-bottom: 8px;
     }
     .categoria-config-grid .stack {
       min-width: 0;
+      gap: 2px;
+    }
+    .categoria-config-grid label {
+      margin-bottom: 0;
     }
     .categoria-config-grid input[type="number"] {
       width: 50%;
